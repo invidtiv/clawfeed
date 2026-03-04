@@ -1603,19 +1603,30 @@ async function editSourceInline(id) {
   try {
     editingSource = await apiFetchJson(`${API}/sources/${id}`, { credentials: 'same-origin' });
     showSourceForm = false; // Don't show bottom form
-    renderSources(); // Re-render to show inline form
-    // After re-render, populate the inline form
-    setTimeout(async () => {
-      await renderInlineSourceForm(id);
-    }, 100);
+    renderSources(); // Re-render to show inline form placeholder
+    // Use requestAnimationFrame to ensure DOM is updated before populating form
+    requestAnimationFrame(() => {
+      requestAnimationFrame(async () => {
+        await renderInlineSourceForm(id);
+      });
+    });
   } catch (e) {
     showToast('Error: ' + e.message);
+    console.error('Edit inline error:', e);
   }
 }
 
 async function renderInlineSourceForm(sourceId) {
   const container = document.getElementById(`inline-form-${sourceId}`);
-  if (!container || !editingSource) return;
+  if (!container) {
+    console.error(`Container inline-form-${sourceId} not found`);
+    showToast('Error: Could not find edit form container');
+    return;
+  }
+  if (!editingSource) {
+    console.error('No editingSource set');
+    return;
+  }
 
   // Fetch groups for the dropdown
   let groupsHtml = '<option value="">None (No group)</option>';
