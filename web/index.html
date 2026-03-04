@@ -1010,9 +1010,10 @@ function renderSourceCard(s, opts = {}) {
   const showUnsub = !!opts.showUnsub;
 
   // Check if this source is being edited inline
-  const isEditing = editingSource && editingSource.id === s.id;
+  const isEditing = editingSource && String(editingSource.id) === String(s.id);
 
   if (isEditing) {
+    console.log(`Rendering inline form placeholder for source ${s.id}`);
     // Render inline edit form
     return `<div class="source-card" id="source-card-${s.id}" style="padding:12px 16px;">
       <div id="inline-form-${s.id}"></div>
@@ -1601,7 +1602,9 @@ async function editSourceForm(id) {
 
 async function editSourceInline(id) {
   try {
+    console.log(`editSourceInline called with id=${id}`);
     editingSource = await apiFetchJson(`${API}/sources/${id}`, { credentials: 'same-origin' });
+    console.log('editingSource loaded:', editingSource);
     showSourceForm = false; // Don't show bottom form
     renderSources(); // Re-render to show inline form placeholder
     // Use requestAnimationFrame to ensure DOM is updated before populating form
