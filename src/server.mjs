@@ -28,7 +28,7 @@ const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
 const SESSION_SECRET = env.SESSION_SECRET || process.env.SESSION_SECRET;
 const API_KEY = env.API_KEY || process.env.API_KEY || '';
-const ALLOWED_ORIGINS = (env.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS || 'localhost').split(',').map(o => o.trim()).filter(Boolean);
+const ALLOWED_ORIGINS = (env.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS || 'localhost,*.ts.net').split(',').map(o => o.trim()).filter(Boolean);
 const PORT = process.env.DIGEST_PORT || env.DIGEST_PORT || 8767;
 const OAUTH_STATE_SECRET = env.OAUTH_STATE_SECRET || process.env.OAUTH_STATE_SECRET || SESSION_SECRET || API_KEY || 'dev-state-secret';
 const MAX_BODY_BYTES = 1024 * 1024;
@@ -1029,7 +1029,8 @@ const server = createServer(async (req, res) => {
   }
 });
 
-const HOST = process.env.DIGEST_HOST || '127.0.0.1';
+const HOST = process.env.DIGEST_HOST || '0.0.0.0';
 server.listen(PORT, HOST, () => {
   console.log(`🚀 ClawFeed API running on http://${HOST}:${PORT}`);
+  console.log(`📡 Accessible via Tailscale at http://vmi2916953.tail652dda.ts.net:${PORT}`);
 });

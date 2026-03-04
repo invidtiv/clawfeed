@@ -89,8 +89,19 @@ cp .env.example .env
 
 # 2. Start the API server
 npm start
-# → API running on http://127.0.0.1:8767
+# → API running on http://0.0.0.0:8767
+# → Accessible via Tailscale at http://YOUR-TAILSCALE-HOSTNAME:8767
 ```
+
+## Tailscale Access
+
+ClawFeed is configured to be accessible via Tailscale by default:
+
+1. **Server binds to all interfaces** (`0.0.0.0`) to accept connections from Tailscale
+2. **CORS allows `*.ts.net`** domains by default
+3. **Access your instance** at `http://YOUR-TAILSCALE-HOSTNAME:8767`
+
+To restrict to localhost only, set `DIGEST_HOST=127.0.0.1` in your `.env` file.
 
 ## Environment Variables
 
@@ -105,7 +116,8 @@ Create a `.env` file in the project root:
 | `GEMINI_API_KEY` | Alternative Gemini key variable name | No | - |
 | `API_KEY` | API key for digest creation | No | - |
 | `DIGEST_PORT` | Server port | No | 8767 |
-| `ALLOWED_ORIGINS` | Allowed origins for CORS | No | localhost |
+| `DIGEST_HOST` | Bind address (0.0.0.0 for all interfaces, 127.0.0.1 for localhost only) | No | 0.0.0.0 |
+| `ALLOWED_ORIGINS` | Allowed origins for CORS | No | localhost,*.ts.net |
 
 \*Required for authentication features. Without OAuth, the app runs in read-only mode.
 
