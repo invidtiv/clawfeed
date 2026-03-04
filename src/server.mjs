@@ -568,7 +568,12 @@ const server = createServer(async (req, res) => {
       const type = params.get('type') || undefined;
       const limit = parseInt(params.get('limit') || '20');
       const offset = parseInt(params.get('offset') || '0');
-      return json(res, listDigests(db, { type, limit, offset }));
+      let group_id = undefined;
+      if (params.has('group_id')) {
+        const gid = params.get('group_id');
+        group_id = gid === 'null' ? null : parseInt(gid);
+      }
+      return json(res, listDigests(db, { type, limit, offset, group_id }));
     }
 
     const digestMatch = path.match(/^\/api\/digests\/(\d+)$/);

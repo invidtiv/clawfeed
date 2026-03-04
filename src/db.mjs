@@ -153,11 +153,21 @@ function _backfillSlugs(db) {
 
 // ── Digests ──
 
-export function listDigests(db, { type, limit = 20, offset = 0 } = {}) {
-  let sql = 'SELECT id, type, content, metadata, created_at FROM digests';
+export function listDigests(db, { type, limit = 20, offset = 0, group_id } = {}) {
+  let sql = 'SELECT digests.*, source_groups.name as group_name FROM digests LEFT JOIN source_groups ON digests.group_id = source_groups.id';
   const params = [];
-  if (type) { sql += ' WHERE type = ?'; params.push(type); }
-  sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+  const conditions = [];
+  if (type) { conditions.push('digests.type = ?'); params.push(type); }
+  if (group_id !== undefined) {
+    if (group_id === null) {
+      conditions.push('digests.group_id IS NULL');
+    } else {
+      conditions.push('digests.group_id = ?');
+      params.push(group_id);
+    }
+  }
+  if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
+  sql += ' ORDER BY digests.created_at DESC LIMIT ? OFFSET ?';
   params.push(limit, offset);
   return db.prepare(sql).all(...params);
 }

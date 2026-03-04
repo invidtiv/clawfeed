@@ -786,7 +786,8 @@ async function renderList(append = false) {
           title = `${parseInt(mon.split('-')[1])} 月`; badge = '';
         }
         const excerpt = extractExcerpt(d.content);
-        html += `<div class="digest-card" data-id="${d.id}"><div class="card-body"><div class="title">${title}</div>${excerpt ? `<div class="excerpt">${excerpt}</div>` : ''}</div>${badge}</div>`;
+        const groupBadge = d.group_name ? ` <span style="font-size:11px;color:#8f8;background:#1a2e1a;padding:1px 6px;border-radius:3px;margin-left:4px;" title="Group: ${d.group_name}">🏷️ ${d.group_name}</span>` : '';
+        html += `<div class="digest-card" data-id="${d.id}"><div class="card-body"><div class="title">${title}${groupBadge}</div>${excerpt ? `<div class="excerpt">${excerpt}</div>` : ''}</div>${badge}</div>`;
       }
       html += `</div></div>`;
     }
