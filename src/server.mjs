@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 import { randomBytes, createHmac, timingSafeEqual } from 'crypto';
 import { lookup } from 'dns/promises';
 import { isIP } from 'net';
-import { getDb, listDigests, getDigest, createDigest, listMarks, createMark, deleteMark, getConfig, setConfig, upsertUser, createSession, getSession, deleteSession, listSources, getSource, createSource, updateSource, deleteSource, getSourceByTypeConfig, getUserBySlug, listDigestsByUser, countDigestsByUser, createPack, getPack, getPackBySlug, listPacks, incrementPackInstall, deletePack, listSubscriptions, subscribe, unsubscribe, bulkSubscribe, isSubscribed, createFeedback, getUserFeedback, getAllFeedback, replyToFeedback, updateFeedbackStatus, markFeedbackRead, getUnreadFeedbackCount } from './db.mjs';
+import { getDb, listDigests, getDigest, createDigest, listMarks, createMark, deleteMark, getConfig, setConfig, upsertUser, createSession, getSession, deleteSession, listSources, getSource, createSource, updateSource, deleteSource, getSourceByTypeConfig, getUserBySlug, listDigestsByUser, countDigestsByUser, createPack, getPack, getPackBySlug, listPacks, incrementPackInstall, deletePack, listSubscriptions, listUserSelections, subscribe, unsubscribe, bulkSubscribe, isSubscribed, createFeedback, getUserFeedback, getAllFeedback, replyToFeedback, updateFeedbackStatus, markFeedbackRead, getUnreadFeedbackCount, listSourceGroups, getSourceGroup, createSourceGroup, updateSourceGroup, deleteSourceGroup, getSourceGroupByName, getSetting, setSetting, getAllSettings } from './db.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -33,9 +33,61 @@ const PORT = process.env.DIGEST_PORT || env.DIGEST_PORT || 8767;
 const OAUTH_STATE_SECRET = env.OAUTH_STATE_SECRET || process.env.OAUTH_STATE_SECRET || SESSION_SECRET || API_KEY || 'dev-state-secret';
 const MAX_BODY_BYTES = 1024 * 1024;
 const DB_PATH = process.env.DIGEST_DB || join(ROOT, 'data', 'digest.db');
+const AUTH_ENABLED = !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+const CONFIG_PATH = join(ROOT, 'config.json');
 
 mkdirSync(join(ROOT, 'data'), { recursive: true });
 const db = getDb(DB_PATH);
+
+function stableJson(value) {
+  if (Array.isArray(value)) return value.map(stableJson);
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const k of Object.keys(value).sort()) out[k] = stableJson(value[k]);
+    return out;
+  }
+  return value;
+}
+
+function syncSourcesFromConfig() {
+  if (!existsSync(CONFIG_PATH)) return;
+  let raw;
+  try {
+    raw = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
+  } catch (e) {
+    console.error('[sources-sync] invalid config.json:', e.message);
+    return;
+  }
+  const configured = Array.isArray(raw?.sources) ? raw.sources : [];
+  if (!configured.length) return;
+
+  for (const src of configured) {
+    const name = (src?.name || '').trim();
+    const type = (src?.type || '').trim();
+    if (!name || !type) continue;
+    const baseConfig = src?.config && typeof src.config === 'object' ? src.config : {};
+    // Preserve ingest schedule metadata from config.json so UI can show/edit it later.
+    const cfg = { ...baseConfig };
+    if (Array.isArray(src.digestTypes) && src.digestTypes.length) cfg._digestTypes = src.digestTypes;
+    if (src.id) cfg._configId = src.id;
+    const config = JSON.stringify(stableJson(cfg));
+    const enabled = src.enabled !== false;
+
+    const existing = db.prepare(
+      'SELECT id FROM sources WHERE (type = ? AND config = ?) OR (name = ? AND type = ? AND is_deleted = 0) LIMIT 1'
+    ).get(type, config, name, type);
+    if (existing?.id) {
+      db.prepare(
+        "UPDATE sources SET name = ?, config = ?, is_active = ?, is_public = 1, updated_at = datetime('now') WHERE id = ?"
+      ).run(name, config, enabled ? 1 : 0, existing.id);
+    } else {
+      const created = createSource(db, { name, type, config, isPublic: 1, createdBy: null });
+      updateSource(db, created.id, { isActive: enabled, isPublic: true });
+    }
+  }
+}
+
+syncSourcesFromConfig();
 
 function json(res, data, status = 200) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -423,8 +475,7 @@ const server = createServer(async (req, res) => {
 
     // GET /api/auth/config — tells frontend if auth is available
     if (req.method === 'GET' && path === '/api/auth/config') {
-      const authEnabled = !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
-      return json(res, { authEnabled });
+      return json(res, { authEnabled: AUTH_ENABLED });
     }
 
     // GET /api/auth/google
@@ -614,7 +665,7 @@ const server = createServer(async (req, res) => {
 
     // ── Source resolve endpoint ──
     if (req.method === 'POST' && path === '/api/sources/resolve') {
-      if (!req.user) return json(res, { error: 'login required' }, 401);
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
       const body = await parseBody(req);
       const url = (body.url || '').trim();
       if (!url) return json(res, { error: 'url required' }, 400);
@@ -629,6 +680,31 @@ const server = createServer(async (req, res) => {
 
     // ── Sources endpoints ──
 
+    const userSourcesMatch = path.match(/^\/api\/users\/([a-z0-9_-]+)\/sources$/);
+    if (req.method === 'GET' && userSourcesMatch) {
+      const user = getUserBySlug(db, userSourcesMatch[1]);
+      if (!user) return json(res, { error: 'user not found' }, 404);
+      const isSelf = !!(req.user && req.user.id === user.id);
+      const selections = listUserSelections(db, user.id, { includePrivate: isSelf });
+      return json(res, {
+        user: { name: user.name, slug: user.slug, avatar: user.avatar },
+        visibility: isSelf ? 'all' : 'public_only',
+        selections: selections.map(s => ({
+          id: s.id,
+          name: s.name,
+          type: s.type,
+          is_public: !!s.is_public,
+          is_active: !!s.is_active,
+          created_by: s.created_by,
+          creator_name: s.creator_name,
+          creator_slug: s.creator_slug,
+          subscribed_at: s.subscribed_at,
+          updated_at: s.updated_at,
+        })),
+        total: selections.length
+      });
+    }
+
     if (req.method === 'GET' && path === '/api/sources') {
       if (req.user) {
         const sources = listSources(db, { userId: req.user.id, includePublic: true });
@@ -636,6 +712,8 @@ const server = createServer(async (req, res) => {
         const subs = new Set(listSubscriptions(db, req.user.id).map(s => s.id));
         return json(res, sources.map(s => ({ ...s, subscribed: subs.has(s.id) })));
       } else {
+        // In local mode (auth disabled), expose all sources for management.
+        if (!AUTH_ENABLED) return json(res, listSources(db));
         return json(res, listSources(db, { includePublic: true }));
       }
     }
@@ -644,35 +722,35 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && sourceMatch) {
       const s = getSource(db, parseInt(sourceMatch[1]));
       if (!s) return json(res, { error: 'not found' }, 404);
-      if (!s.is_public && (!req.user || s.created_by !== req.user.id)) {
+      if (AUTH_ENABLED && !s.is_public && (!req.user || s.created_by !== req.user.id)) {
         return json(res, { error: 'not found' }, 404);
       }
       return json(res, s);
     }
 
     if (req.method === 'POST' && path === '/api/sources') {
-      if (!req.user) return json(res, { error: 'login required' }, 401);
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
       const body = await parseBody(req);
-      const result = createSource(db, { ...body, createdBy: req.user.id });
+      const result = createSource(db, { ...body, createdBy: req.user?.id || null });
       return json(res, result, 201);
     }
 
     if (req.method === 'PUT' && sourceMatch) {
-      if (!req.user) return json(res, { error: 'login required' }, 401);
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
       const s = getSource(db, parseInt(sourceMatch[1]));
       if (!s) return json(res, { error: 'not found' }, 404);
-      if (s.created_by !== req.user.id) return json(res, { error: 'forbidden' }, 403);
+      if (req.user && s.created_by !== req.user.id) return json(res, { error: 'forbidden' }, 403);
       const body = await parseBody(req);
       updateSource(db, parseInt(sourceMatch[1]), body);
       return json(res, { ok: true });
     }
 
     if (req.method === 'DELETE' && sourceMatch) {
-      if (!req.user) return json(res, { error: 'login required' }, 401);
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
       const s = getSource(db, parseInt(sourceMatch[1]));
       if (!s) return json(res, { error: 'not found' }, 404);
-      if (s.created_by !== req.user.id) return json(res, { error: 'forbidden' }, 403);
-      deleteSource(db, parseInt(sourceMatch[1]), req.user.id);
+      if (req.user && s.created_by !== req.user.id) return json(res, { error: 'forbidden' }, 403);
+      deleteSource(db, parseInt(sourceMatch[1]), req.user?.id || null);
       return json(res, { ok: true });
     }
 
@@ -853,6 +931,93 @@ const server = createServer(async (req, res) => {
       if (!API_KEY || bearerKey !== API_KEY) return json(res, { error: 'invalid api key' }, 401);
       const body = await parseBody(req);
       for (const [k, v] of Object.entries(body)) setConfig(db, k, v);
+      return json(res, { ok: true });
+    }
+
+    // ── Source Groups endpoints ──
+
+    if (req.method === 'GET' && path === '/api/groups') {
+      const activeOnly = params.get('active') === 'true';
+      const groups = listSourceGroups(db, { activeOnly });
+      return json(res, groups.map(g => ({
+        ...g,
+        digest_types: JSON.parse(g.digest_types || '[]'),
+        schedule: JSON.parse(g.schedule || '{}')
+      })));
+    }
+
+    const groupMatch = path.match(/^\/api\/groups\/(\d+)$/);
+    if (req.method === 'GET' && groupMatch) {
+      const g = getSourceGroup(db, parseInt(groupMatch[1]));
+      if (!g) return json(res, { error: 'not found' }, 404);
+      return json(res, {
+        ...g,
+        digest_types: JSON.parse(g.digest_types || '[]'),
+        schedule: JSON.parse(g.schedule || '{}')
+      });
+    }
+
+    if (req.method === 'POST' && path === '/api/groups') {
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
+      const body = await parseBody(req);
+      const digestTypes = JSON.stringify(body.digestTypes || body.digest_types || []);
+      const schedule = JSON.stringify(body.schedule || {});
+      const result = createSourceGroup(db, {
+        name: body.name,
+        description: body.description || '',
+        digestTypes,
+        timezone: body.timezone || 'UTC',
+        schedule
+      });
+      return json(res, result, 201);
+    }
+
+    if (req.method === 'PUT' && groupMatch) {
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
+      const body = await parseBody(req);
+      const updates = { ...body };
+      if (body.digestTypes || body.digest_types) {
+        updates.digest_types = JSON.stringify(body.digestTypes || body.digest_types);
+        delete updates.digestTypes;
+      }
+      if (body.schedule) {
+        updates.schedule = JSON.stringify(body.schedule);
+      }
+      updateSourceGroup(db, parseInt(groupMatch[1]), updates);
+      return json(res, { ok: true });
+    }
+
+    if (req.method === 'DELETE' && groupMatch) {
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
+      deleteSourceGroup(db, parseInt(groupMatch[1]));
+      return json(res, { ok: true });
+    }
+
+    // ── Settings endpoints ──
+
+    if (req.method === 'GET' && path === '/api/settings') {
+      return json(res, getAllSettings(db));
+    }
+
+    if (req.method === 'PUT' && path === '/api/settings') {
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
+      const body = await parseBody(req);
+      for (const [k, v] of Object.entries(body)) {
+        setSetting(db, k, v);
+      }
+      return json(res, { ok: true });
+    }
+
+    const settingMatch = path.match(/^\/api\/settings\/([a-z_]+)$/);
+    if (req.method === 'GET' && settingMatch) {
+      const value = getSetting(db, settingMatch[1]);
+      return json(res, { key: settingMatch[1], value });
+    }
+
+    if (req.method === 'PUT' && settingMatch) {
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
+      const body = await parseBody(req);
+      setSetting(db, settingMatch[1], body.value);
       return json(res, { ok: true });
     }
 

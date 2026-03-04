@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.9.0 — 2026-03-04
+### ✨ New
+- **Source Groups** — Organize sources into groups with separate digests per group (#TBD)
+  - New `source_groups` table with `digestTypes`, `timezone`, and `schedule` per group
+  - Sources can be assigned to groups via `group_id` column
+  - Groups management UI in web dashboard (Groups tab)
+- **Global Settings** — Configure system-wide preferences (#TBD)
+  - New `settings` table for global configuration
+  - Settings UI for timezone and language preferences
+  - API endpoints: `GET/PUT /api/settings`
+- **Group-Based Digest Generation** — Single command generates digests for all groups automatically (#TBD)
+  - `python3 generate-digest.py 4h-tech` now loads all sources, partitions by group, and generates separate digests
+  - Each digest stored with `group_id` for filtering and organization
+  - Ungrouped sources handled as "General" digest
+  - Detailed progress reporting per group
+- **Custom Digest Types** — Removed CHECK constraint to allow any digest type naming (e.g., `4h-tech`, `daily-status`, `weekly-pt`) (#TBD)
+
+### 🔧 Database
+- **Migration 010** — Added `source_groups` and `settings` tables, `group_id` columns to `sources` and `digests`
+- **Migration 011** — Removed digest type constraint to support custom types
+
+### 🌐 API
+- `GET /api/groups` — List all source groups
+- `POST /api/groups` — Create source group
+- `PUT /api/groups/:id` — Update source group
+- `DELETE /api/groups/:id` — Delete source group (unassigns sources first)
+- `GET /api/settings` — Get all settings
+- `PUT /api/settings` — Update settings
+- Updated `POST /api/digests` to accept and store `group_id`
+
+### 📖 Documentation
+- Updated README.md with Group-Based Digest Generation section
+- Updated SKILL.md with groups and settings endpoints
+- Added comprehensive API documentation for new endpoints
+
 ## v0.8.1 — 2026-02-24
 ### ✨ New
 - **Telegram group link in info banner** — Clickable TG icon + group invite link with i18n support (#16)

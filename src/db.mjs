@@ -102,6 +102,30 @@ export function getDb(dbPath) {
   } catch (e) {
     if (!e.message.includes('duplicate column')) console.error('Migration 009:', e.message);
   }
+  // Migration 010: source groups and settings
+  try {
+    const sql10 = readFileSync(join(ROOT, 'migrations', '010_source_groups.sql'), 'utf8');
+    for (const stmt of sql10.split(';').filter(s => s.trim())) {
+      try { _db.exec(stmt + ';'); } catch (e) {
+        if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) throw e;
+      }
+    }
+  } catch (e) {
+    if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) console.error('Migration 010:', e.message);
+  }
+
+  // Migration 011: remove digest type constraint to allow custom types
+  try {
+    const sql11 = readFileSync(join(ROOT, 'migrations', '011_remove_digest_type_constraint.sql'), 'utf8');
+    for (const stmt of sql11.split(';').filter(s => s.trim())) {
+      try { _db.exec(stmt + ';'); } catch (e) {
+        if (!e.message.includes('already exists') && !e.message.includes('no such table')) throw e;
+      }
+    }
+  } catch (e) {
+    if (!e.message.includes('already exists') && !e.message.includes('no such table')) console.error('Migration 011:', e.message);
+  }
+
   // Backfill slugs for existing users
   _backfillSlugs(_db);
   return _db;
@@ -142,11 +166,21 @@ export function getDigest(db, id) {
   return db.prepare('SELECT * FROM digests WHERE id = ?').get(id);
 }
 
-export function createDigest(db, { type, content, metadata = '{}', created_at }) {
-  const sql = created_at
-    ? 'INSERT INTO digests (type, content, metadata, created_at) VALUES (?, ?, ?, ?)'
-    : 'INSERT INTO digests (type, content, metadata) VALUES (?, ?, ?)';
-  const params = created_at ? [type, content, metadata, created_at] : [type, content, metadata];
+export function createDigest(db, { type, content, metadata = '{}', created_at, group_id }) {
+  let sql, params;
+  if (created_at && group_id !== undefined) {
+    sql = 'INSERT INTO digests (type, content, metadata, created_at, group_id) VALUES (?, ?, ?, ?, ?)';
+    params = [type, content, metadata, created_at, group_id];
+  } else if (created_at) {
+    sql = 'INSERT INTO digests (type, content, metadata, created_at) VALUES (?, ?, ?, ?)';
+    params = [type, content, metadata, created_at];
+  } else if (group_id !== undefined) {
+    sql = 'INSERT INTO digests (type, content, metadata, group_id) VALUES (?, ?, ?, ?)';
+    params = [type, content, metadata, group_id];
+  } else {
+    sql = 'INSERT INTO digests (type, content, metadata) VALUES (?, ?, ?)';
+    params = [type, content, metadata];
+  }
   const result = db.prepare(sql).run(...params);
   return { id: result.lastInsertRowid };
 }
@@ -379,6 +413,23 @@ export function listSubscriptions(db, userId) {
   `).all(userId);
 }
 
+export function listUserSelections(db, userId, { includePrivate = false } = {}) {
+  let sql = `
+    SELECT
+      s.id, s.name, s.type, s.config, s.is_public, s.is_active, s.created_by, s.updated_at,
+      us.created_at as subscribed_at,
+      u.name as creator_name,
+      u.slug as creator_slug
+    FROM user_subscriptions us
+    JOIN sources s ON us.source_id = s.id
+    LEFT JOIN users u ON s.created_by = u.id
+    WHERE us.user_id = ? AND s.is_deleted = 0
+  `;
+  if (!includePrivate) sql += ' AND s.is_public = 1';
+  sql += ' ORDER BY us.created_at DESC';
+  return db.prepare(sql).all(userId);
+}
+
 export function subscribe(db, userId, sourceId) {
   return db.prepare('INSERT OR IGNORE INTO user_subscriptions (user_id, source_id) VALUES (?, ?)').run(userId, sourceId);
 }
@@ -454,4 +505,76 @@ export function getConfig(db) {
 export function setConfig(db, key, value) {
   const v = typeof value === 'string' ? value : JSON.stringify(value);
   db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run(key, v);
+}
+
+// ── Source Groups ──
+
+export function listSourceGroups(db, { activeOnly } = {}) {
+  let sql = 'SELECT * FROM source_groups';
+  const conditions = [];
+  const params = [];
+  if (activeOnly) { conditions.push('is_active = 1'); }
+  if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
+  sql += ' ORDER BY created_at DESC';
+  return db.prepare(sql).all(...params);
+}
+
+export function getSourceGroup(db, id) {
+  return db.prepare('SELECT * FROM source_groups WHERE id = ?').get(id);
+}
+
+export function createSourceGroup(db, { name, description = '', digestTypes = '[]', timezone = 'UTC', schedule = '{}' }) {
+  const result = db.prepare(
+    'INSERT INTO source_groups (name, description, digest_types, timezone, schedule) VALUES (?, ?, ?, ?, ?)'
+  ).run(name, description, digestTypes, timezone, schedule);
+  return { id: result.lastInsertRowid };
+}
+
+export function updateSourceGroup(db, id, patch) {
+  const allowed = ['name', 'description', 'digest_types', 'timezone', 'schedule', 'is_active'];
+  const sets = [];
+  const params = [];
+  for (const [k, v] of Object.entries(patch)) {
+    const col = k === 'isActive' ? 'is_active' : k === 'digestTypes' ? 'digest_types' : k;
+    if (allowed.includes(col)) {
+      sets.push(`${col} = ?`);
+      params.push(typeof v === 'boolean' ? (v ? 1 : 0) : v);
+    }
+  }
+  if (!sets.length) return { changes: 0 };
+  sets.push("updated_at = datetime('now')");
+  params.push(id);
+  return db.prepare(`UPDATE source_groups SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+}
+
+export function deleteSourceGroup(db, id) {
+  // Unassign all sources from this group first
+  db.prepare('UPDATE sources SET group_id = NULL WHERE group_id = ?').run(id);
+  return db.prepare('DELETE FROM source_groups WHERE id = ?').run(id);
+}
+
+export function getSourceGroupByName(db, name) {
+  return db.prepare('SELECT * FROM source_groups WHERE name = ?').get(name);
+}
+
+// ── Settings ──
+
+export function getSetting(db, key) {
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
+  if (!row) return null;
+  try { return JSON.parse(row.value); } catch { return row.value; }
+}
+
+export function setSetting(db, key, value) {
+  const v = typeof value === 'string' ? value : JSON.stringify(value);
+  db.prepare("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))").run(key, v);
+}
+
+export function getAllSettings(db) {
+  const rows = db.prepare('SELECT key, value FROM settings').all();
+  const obj = {};
+  for (const r of rows) {
+    try { obj[r.key] = JSON.parse(r.value); } catch { obj[r.key] = r.value; }
+  }
+  return obj;
 }

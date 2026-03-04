@@ -87,9 +87,15 @@
   .digest-card .title { font-size: 14px; font-weight: 500; }
   .digest-card .excerpt { font-size: 12px; color: #666; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; }
   .digest-card .time-badge { font-size: 12px; color: #666; background: #141414; padding: 3px 10px; border-radius: 6px; border: 1px solid #222; white-space: nowrap; }
-  .digest-viewer { display: none; background: #1a1a1a; border: 1px solid #282828; border-radius: 12px; padding: 24px; margin-top: 16px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; font-size: 14px; max-height: 80vh; overflow-y: auto; overflow-x: hidden; }
+  .digest-viewer { display: none; background: #1a1a1a; border: 1px solid #282828; border-radius: 12px; padding: 24px; margin-top: 16px; line-height: 1.7; white-space: normal; word-break: break-word; overflow-wrap: break-word; font-size: 14px; max-height: 80vh; overflow-y: auto; overflow-x: hidden; }
   .digest-viewer a { color: #58a6ff; text-decoration: none; }
   .digest-viewer a:hover { text-decoration: underline; }
+  .digest-viewer h1, .digest-viewer h2, .digest-viewer h3 { color: #f5f5f5; margin: 16px 0 8px; }
+  .digest-viewer p { margin: 0 0 12px; }
+  .digest-viewer ul, .digest-viewer ol { margin: 0 0 12px 1.2em; padding-left: 0; }
+  .digest-viewer li { margin-bottom: 6px; line-height: 1.6; }
+  .digest-viewer blockquote { border-left: 3px solid #333; margin: 0 0 12px; padding-left: 12px; color: #bbb; }
+  .digest-viewer pre { background: #0f0f0f; border: 1px solid #333; border-radius: 8px; padding: 12px; margin: 0 0 16px; overflow-x: auto; font-size: 13px; }
   .back-btn { display: inline-block; margin-bottom: 16px; padding: 6px 14px; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; color: #aaa; cursor: pointer; font-size: 13px; }
   .back-btn:hover { color: #fff; border-color: #666; }
   .empty { color: #555; text-align: center; padding: 40px; font-size: 14px; }
@@ -204,7 +210,10 @@
     <div class="tab" data-type="daily">日报</div>
     <div class="tab" data-type="weekly">周报</div>
     <div class="tab" data-type="monthly">月报</div>
+    <div class="tab" data-type="sources">📡 数据源</div>
+    <div class="tab" data-type="groups">🏷️ 分组</div>
     <div class="tab" data-type="marks">📌 Mark 收藏</div>
+    <div class="tab" data-type="settings">⚙️ 设置</div>
   </div>
   <div id="loginBanner" class="login-banner" style="display:none;">
     <span>💡 登录 Google 账号即可收藏文章、管理个人书签</span>
@@ -222,6 +231,7 @@
   <div class="changelog-inner" id="changelogContent"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked@5.1.1/marked.min.js" crossorigin="anonymous"></script>
 <script>
 window.onerror = function(msg, src, line) {
   document.getElementById('list').innerHTML = '<div class="empty">JS Error: ' + msg + ' (line ' + line + ')</div>';
@@ -250,7 +260,7 @@ const I18N = {
   zh: {
     title: '☀️ ClawFeed',
     subtitle: 'AI 新闻简报 — POWERED BY <a href="https://x.com/ZylosAI" target="_blank" rel="noopener" class="agent-name zylos">Jessie@ZylosAI</a>, <a href="https://x.com/OpenClaw" target="_blank" rel="noopener" class="agent-name openclaw">Lisa@OpenClaw</a>',
-    tab4h: '4H 简报', tabDaily: '日报', tabWeekly: '周报', tabMonthly: '月报', tabMarks: '📌 Mark 收藏',
+    tab4h: '4H 简报', tabDaily: '日报', tabWeekly: '周报', tabMonthly: '月报', tabMarks: '📌 Mark 收藏', tabGroups: '🏷️ 分组', tabSettings: '⚙️ 设置',
     loginBanner: '💡 登录 Google 账号即可收藏文章、管理个人书签',
     loginBtn: '登录', logout: '退出', signIn: '登录',
     loading: '加载中...', noData: '暂无数据', loadMore: '加载更多', loadingMore: '加载中...',
@@ -307,11 +317,29 @@ const I18N = {
     feedbackSend: '发送', feedbackEmpty: '有什么想说的？我们会认真看每一条反馈 😊',
     feedbackSent: '✅ 已发送', feedbackNamePlaceholder: '名字（可选）',
     infoBanner: '🔥 感谢大家热情！线上版本今天会快速迭代修掉一些 bug，进 <a href="https://t.me/CocoAIxyz" target="_blank" rel="noopener" style="color:#58a6ff;text-decoration:underline;">TG 交流群</a>保持更新',
+    settingsTitle: '⚙️ 系统设置',
+    settingsTimezone: '时区',
+    settingsLanguage: '语言',
+    settingsSave: '保存设置',
+    settingsSaved: '✅ 设置已保存',
+    groupsTitle: '🏷️ 数据源分组',
+    addGroup: '➕ 添加分组',
+    groupName: '分组名称',
+    groupDesc: '描述',
+    groupTimezone: '时区',
+    groupDigestTypes: '摘要类型',
+    groupSchedule: '定时配置',
+    groupCreated: '✅ 分组已创建',
+    groupUpdated: '✅ 分组已更新',
+    groupDeleted: '✅ 分组已删除',
+    noGroups: '暂无分组',
+    editGroup: '编辑',
+    deleteGroup: '删除',
   },
   en: {
     title: '☀️ ClawFeed',
     subtitle: 'AI NEWS DIGEST — POWERED BY <a href="https://x.com/ZylosAI" target="_blank" rel="noopener" class="agent-name zylos">Jessie@ZylosAI</a>, <a href="https://x.com/OpenClaw" target="_blank" rel="noopener" class="agent-name openclaw">Lisa@OpenClaw</a>',
-    tab4h: '4H Briefs', tabDaily: 'Daily', tabWeekly: 'Weekly', tabMonthly: 'Monthly', tabMarks: '📌 Marks',
+    tab4h: '4H Briefs', tabDaily: 'Daily', tabWeekly: 'Weekly', tabMonthly: 'Monthly', tabMarks: '📌 Marks', tabGroups: '🏷️ Groups', tabSettings: '⚙️ Settings',
     loginBanner: '💡 Sign in with Google to bookmark articles and manage your reading list',
     loginBtn: 'Login', logout: 'Logout', signIn: 'Sign in',
     loading: 'Loading...', noData: 'No data', loadMore: 'Load More', loadingMore: 'Loading...',
@@ -368,6 +396,24 @@ const I18N = {
     feedbackSend: 'Send', feedbackEmpty: 'Have something to say? We read every piece of feedback 😊',
     feedbackSent: '✅ Sent', feedbackNamePlaceholder: 'Name (optional)',
     infoBanner: '🔥 Thanks for the enthusiasm! We\'re shipping bug fixes today — join our <a href="https://t.me/CocoAIxyz" target="_blank" rel="noopener" style="color:#58a6ff;text-decoration:underline;">TG group</a> for updates',
+    settingsTitle: '⚙️ System Settings',
+    settingsTimezone: 'Timezone',
+    settingsLanguage: 'Language',
+    settingsSave: 'Save Settings',
+    settingsSaved: '✅ Settings saved',
+    groupsTitle: '🏷️ Source Groups',
+    addGroup: '➕ Add Group',
+    groupName: 'Group Name',
+    groupDesc: 'Description',
+    groupTimezone: 'Timezone',
+    groupDigestTypes: 'Digest Types',
+    groupSchedule: 'Schedule',
+    groupCreated: '✅ Group created',
+    groupUpdated: '✅ Group updated',
+    groupDeleted: '✅ Group deleted',
+    noGroups: 'No groups yet',
+    editGroup: 'Edit',
+    deleteGroup: 'Delete',
   }
 };
 
@@ -390,7 +436,10 @@ function applyLang() {
   document.querySelector('[data-type="daily"]').textContent = t('tabDaily');
   document.querySelector('[data-type="weekly"]').textContent = t('tabWeekly');
   document.querySelector('[data-type="monthly"]').textContent = t('tabMonthly');
+  document.querySelector('[data-type="sources"]').textContent = t('tabSources');
+  document.querySelector('[data-type="groups"]').textContent = t('tabGroups');
   document.querySelector('[data-type="marks"]').textContent = t('tabMarks');
+  document.querySelector('[data-type="settings"]').textContent = t('tabSettings');
   const banner = document.getElementById('loginBanner');
   if (banner) banner.querySelector('span').textContent = t('loginBanner');
   renderAuthBar();
@@ -456,6 +505,27 @@ const API = (() => {
   return '/api';
 })();
 
+if (typeof marked !== 'undefined') {
+  marked.setOptions({
+    gfm: true,
+    breaks: true,
+    headerIds: false,
+    mangle: false,
+    smartLists: true
+  });
+}
+
+async function apiFetchJson(url, options = {}) {
+  const r = await fetch(url, options);
+  let data = null;
+  try { data = await r.json(); } catch {}
+  if (!r.ok) {
+    const msg = data?.error || data?.message || `HTTP ${r.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
 let currentUser = null;
 
 let authEnabled = true;
@@ -491,7 +561,6 @@ function ghLangHtml() {
 function renderAuthBar() {
   const bar = document.getElementById('authBar');
   const ghSvg = `<svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>`;
-  const sourcesBtn = `<span onclick="currentType='sources';document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));currentOffset=0;allLoaded=false;renderSources();location.hash='sources'" style="cursor:pointer;font-size:16px;line-height:0;padding:2px;color:#666;transition:color .2s;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'" title="${t('tabSources')}">📡</span>`;
   const moreMenu = `<div class="user-menu" onclick="document.getElementById('moreDropdown').classList.toggle('show')">
     <span style="cursor:pointer;font-size:14px;color:#666;transition:color .2s;padding:2px 4px;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'">⋯</span>
     <div id="moreDropdown" class="user-dropdown">
@@ -501,7 +570,7 @@ function renderAuthBar() {
     </div>
   </div>`;
   if (currentUser) {
-    bar.innerHTML = ghLangHtml() + sourcesBtn
+    bar.innerHTML = ghLangHtml()
       + `<div class="user-menu" onclick="document.getElementById('userDropdown').classList.toggle('show')">
         <img src="${currentUser.avatar}" alt="">
         <span class="user-name">${currentUser.name}</span>
@@ -511,7 +580,7 @@ function renderAuthBar() {
         </div>
       </div>` + moreMenu;
   } else {
-    bar.innerHTML = ghLangHtml() + sourcesBtn
+    bar.innerHTML = ghLangHtml()
       + (authEnabled ? `<a class="auth-btn" href="${API}/auth/google?origin=${encodeURIComponent(location.origin)}"><svg class="g-logo" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>${t('signIn')}</a>` : '')
       + moreMenu;
   }
@@ -674,6 +743,8 @@ async function renderList(append = false) {
 
   if (currentType === 'marks') { renderMarks(); return; }
   if (currentType === 'sources') { renderSources(); return; }
+  if (currentType === 'groups') { renderGroups(); return; }
+  if (currentType === 'settings') { renderSettings(); return; }
 
   if (!append) {
     currentOffset = 0;
@@ -770,7 +841,10 @@ async function loadDigest(id) {
     });
     text = text.replace(/(https?:\/\/(?!x\.com)[^\s<)]+)/g, '<a href="$1" target="_blank">$1</a>');
 
-    viewer.innerHTML = `<div class="back-btn" onclick="renderList()">${t('back')}</div>\n${text}`;
+    const markdownHtml = typeof marked !== 'undefined'
+      ? marked.parse(text)
+      : `<pre>${esc(text)}</pre>`;
+    viewer.innerHTML = `<div class="back-btn" onclick="renderList()">${t('back')}</div>${markdownHtml}`;
     viewer.style.display = 'block';
   } catch (e) {
     viewer.innerHTML = `<div class="back-btn" onclick="renderList()">${t('back')}</div>\n<div class="empty">${t('cantLoad')}</div>`;
@@ -885,9 +959,51 @@ let editingSource = null;
 
 let createdByMeExpanded = false;
 
+function parseSourceConfigObj(rawConfig) {
+  try {
+    const cfg = typeof rawConfig === 'string' ? JSON.parse(rawConfig) : (rawConfig || {});
+    return cfg && typeof cfg === 'object' ? cfg : {};
+  } catch {
+    return {};
+  }
+}
+
+function normalizeDigestTypes(raw) {
+  const allowed = ['4h', 'daily', 'weekly', 'monthly'];
+  const list = Array.isArray(raw) ? raw.filter(x => allowed.includes(x)) : [];
+  const uniq = [...new Set(list)];
+  return uniq.length ? uniq : ['daily'];
+}
+
+function sourceTargetLabel(type, cfg) {
+  if (type === 'rss' || type === 'website' || type === 'digest_feed') return cfg.url || '';
+  if (type === 'twitter_feed') return cfg.handle || '';
+  if (type === 'twitter_list') return cfg.list_url || '';
+  if (type === 'reddit') return cfg.subreddit ? `r/${cfg.subreddit}` : '';
+  if (type === 'github_trending') return cfg.language ? `lang:${cfg.language}` : 'lang:all';
+  if (type === 'hackernews') return cfg.filter ? `filter:${cfg.filter}` : 'HN';
+  if (type === 'custom_api') return cfg.endpoint || '';
+  return '';
+}
+
+function renderDigestTypeButtons(sourceId, digestTypes) {
+  const all = ['4h', 'daily', 'weekly', 'monthly'];
+  return all.map(dt => {
+    const active = digestTypes.includes(dt);
+    const bg = active ? '#1f3a22' : '#1a1a1a';
+    const border = active ? '#40c040' : '#2c2c2c';
+    const color = active ? '#7be27b' : '#888';
+    return `<button onclick="toggleSourceDigestType(${sourceId}, '${dt}')" style="padding:2px 7px;font-size:11px;background:${bg};border:1px solid ${border};border-radius:6px;color:${color};cursor:pointer;">${dt}</button>`;
+  }).join('');
+}
+
 function renderSourceCard(s, opts = {}) {
   const icon = SOURCE_ICONS[s.type] || '📦';
   const lastFetch = s.last_fetched_at ? s.last_fetched_at.slice(0, 16).replace('T', ' ') : t('never');
+  const cfg = parseSourceConfigObj(s.config);
+  const digestTypes = normalizeDigestTypes(cfg._digestTypes);
+  const target = sourceTargetLabel(s.type, cfg);
+  const ingestLabel = lang === 'zh' ? '采集' : 'Ingest';
   const showToggle = opts.showToggle !== false;
   const showEdit = !!opts.showEdit;
   const showDelete = !!opts.showDelete;
@@ -906,8 +1022,43 @@ function renderSourceCard(s, opts = {}) {
     </div>
     <div class="source-meta" style="font-size:11px;">
       <span>${t('lastFetched')}: ${lastFetch}</span>
+      ${target ? `<span style="color:#7f8a97;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${target}">${target}</span>` : ''}
+      <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span>${ingestLabel}:</span>
+        <span style="display:inline-flex;gap:4px;flex-wrap:wrap;">${renderDigestTypeButtons(s.id, digestTypes)}</span>
+      </span>
     </div>
   </div>`;
+}
+
+async function toggleSourceDigestType(sourceId, digestType) {
+  const allowed = ['4h', 'daily', 'weekly', 'monthly'];
+  if (!allowed.includes(digestType)) return;
+  try {
+    const src = await apiFetchJson(`${API}/sources/${sourceId}`, { credentials: 'same-origin' });
+    const cfg = parseSourceConfigObj(src.config);
+    let digestTypes = normalizeDigestTypes(cfg._digestTypes);
+    if (digestTypes.includes(digestType)) {
+      if (digestTypes.length === 1) {
+        showToast(lang === 'zh' ? '至少保留一个采集周期' : 'Keep at least one ingestion type');
+        return;
+      }
+      digestTypes = digestTypes.filter(t => t !== digestType);
+    } else {
+      digestTypes.push(digestType);
+    }
+    cfg._digestTypes = digestTypes;
+    await apiFetchJson(`${API}/sources/${sourceId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ config: JSON.stringify(cfg) })
+    });
+    showToast((lang === 'zh' ? '采集周期已更新: ' : 'Ingestion updated: ') + digestTypes.join(', '));
+    renderSources();
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
 }
 
 function renderDeletedSourceCard(s) {
@@ -931,11 +1082,12 @@ async function renderSources() {
     const resp = await fetch(`${API}/sources`, { credentials: 'same-origin' });
     const sources = await resp.json();
     const isLoggedIn = !!currentUser;
+    const canManageWithoutAuth = !isLoggedIn && !authEnabled;
 
     let html = '';
 
-    // ── Not logged in: show read-only sources list ──
-    if (!isLoggedIn) {
+    // ── Not logged in + auth enabled: show read-only public sources list ──
+    if (!isLoggedIn && !canManageWithoutAuth) {
       html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h2 style="margin:0;font-size:16px;color:#e0e0e0;">📡 ${lang==='zh'?'信息源':'Sources'} <span style="font-size:13px;color:#666;font-weight:400;">${sources.length} ${lang==='zh'?'个公开源':'public sources'}</span></h2>
       </div>`;
@@ -954,6 +1106,27 @@ async function renderSources() {
       }
       html += '</div>';
       list.innerHTML = html;
+      return;
+    }
+
+    // ── Local mode (auth disabled): full source management without login ──
+    if (canManageWithoutAuth) {
+      html += `<h2 style="margin:0 0 16px;font-size:16px;color:#e0e0e0;">📡 ${lang==='zh'?'信息源管理（本地模式）':'Source Management (Local Mode)'}</h2>`;
+      if (!sources.length) {
+        html += `<div style="text-align:center;padding:28px 20px 18px;">
+          <div style="font-size:18px;font-weight:600;margin-bottom:8px;">${lang==='zh'?'暂无信息源':'No sources yet'}</div>
+          <div style="color:#888;font-size:13px;margin-bottom:14px;">${lang==='zh'?'请粘贴 URL 自动识别，或手动添加':'Paste a URL for auto-detect, or add one manually'}</div>
+        </div>`;
+      } else {
+        html += '<div class="digest-list" style="gap:8px;margin-bottom:16px;">';
+        for (const s of sources) html += renderSourceCard(s, { showToggle: true, showEdit: true, showDelete: true });
+        html += '</div>';
+      }
+      html += `<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;"><div id="smartAddContainer" style="flex:1;min-width:280px;"></div></div>`;
+      html += `<div id="sourceFormContainer"></div>`;
+      list.innerHTML = html;
+      renderSmartAdd();
+      if (showSourceForm) renderSourceForm();
       return;
     }
 
@@ -1081,6 +1254,231 @@ let resolvedSource = null;
 let smartAddState = 'input'; // 'input' | 'loading' | 'preview' | 'error'
 let smartAddError = '';
 
+// ── Render Groups ──
+async function renderGroups() {
+  const list = document.getElementById('list');
+  list.innerHTML = `<div class="loading">${t('loading')}</div>`;
+  try {
+    const resp = await fetch(`${API}/groups`, { credentials: 'same-origin' });
+    const groups = await resp.json();
+
+    let html = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h2 style="margin:0;font-size:16px;color:#e0e0e0;">${t('groupsTitle')}</h2>
+        <button onclick="showGroupForm()" style="padding:6px 14px;background:#1a3a1a;border:1px solid #40c040;border-radius:6px;color:#40c040;cursor:pointer;font-size:12px;">${t('addGroup')}</button>
+      </div>
+    `;
+
+    if (!groups.length) {
+      html += `<div class="empty">${t('noGroups')}</div>`;
+    } else {
+      html += '<div class="digest-list" style="gap:8px;">';
+      for (const g of groups) {
+        const digestTypes = g.digest_types.join(', ') || 'None';
+        html += `
+          <div class="source-card">
+            <div class="source-header">
+              <span class="source-name">🏷️ ${g.name}</span>
+              <div class="source-actions">
+                <button onclick="editGroup(${g.id})">${t('editGroup')}</button>
+                <button class="danger" onclick="deleteGroup(${g.id})">${t('deleteGroup')}</button>
+              </div>
+            </div>
+            ${g.description ? `<div style="font-size:13px;color:#888;margin-top:6px;">${g.description}</div>` : ''}
+            <div class="source-meta">
+              <span>⏰ ${g.timezone}</span>
+              <span>📊 ${digestTypes}</span>
+            </div>
+          </div>
+        `;
+      }
+      html += '</div>';
+    }
+
+    html += `<div id="groupFormContainer" style="margin-top:16px;"></div>`;
+    list.innerHTML = html;
+  } catch (e) {
+    list.innerHTML = `<div class="empty">${t('cantLoad')}: ${e.message}</div>`;
+  }
+}
+
+let currentGroupEdit = null;
+
+function showGroupForm(group = null) {
+  currentGroupEdit = group;
+  const container = document.getElementById('groupFormContainer');
+  const isEdit = !!group;
+  const formHtml = `
+    <div class="source-form">
+      <div class="form-row">
+        <label>${t('groupName')}</label>
+        <input type="text" id="group_name" value="${group?.name || ''}" placeholder="${t('groupName')}">
+      </div>
+      <div class="form-row">
+        <label>${t('groupDesc')}</label>
+        <input type="text" id="group_desc" value="${group?.description || ''}" placeholder="${t('groupDesc')}">
+      </div>
+      <div class="form-row">
+        <label>${t('groupTimezone')}</label>
+        <select id="group_timezone">
+          <option value="UTC" ${group?.timezone === 'UTC' ? 'selected' : ''}>UTC</option>
+          <option value="America/New_York" ${group?.timezone === 'America/New_York' ? 'selected' : ''}>America/New_York (EST/EDT)</option>
+          <option value="America/Los_Angeles" ${group?.timezone === 'America/Los_Angeles' ? 'selected' : ''}>America/Los_Angeles (PST/PDT)</option>
+          <option value="Europe/London" ${group?.timezone === 'Europe/London' ? 'selected' : ''}>Europe/London</option>
+          <option value="Europe/Lisbon" ${group?.timezone === 'Europe/Lisbon' ? 'selected' : ''}>Europe/Lisbon</option>
+          <option value="Europe/Paris" ${group?.timezone === 'Europe/Paris' ? 'selected' : ''}>Europe/Paris</option>
+          <option value="Asia/Singapore" ${group?.timezone === 'Asia/Singapore' ? 'selected' : ''}>Asia/Singapore</option>
+          <option value="Asia/Tokyo" ${group?.timezone === 'Asia/Tokyo' ? 'selected' : ''}>Asia/Tokyo</option>
+          <option value="Asia/Shanghai" ${group?.timezone === 'Asia/Shanghai' ? 'selected' : ''}>Asia/Shanghai</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>${t('groupDigestTypes')}</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_4h" ${group?.digest_types?.includes('4h') ? 'checked' : ''}> 4H</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_daily" ${group?.digest_types?.includes('daily') ? 'checked' : ''}> Daily</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_weekly" ${group?.digest_types?.includes('weekly') ? 'checked' : ''}> Weekly</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_monthly" ${group?.digest_types?.includes('monthly') ? 'checked' : ''}> Monthly</label>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="primary" onclick="saveGroup()">${t('save')}</button>
+        <button onclick="hideGroupForm()">${t('cancel')}</button>
+      </div>
+    </div>
+  `;
+  container.innerHTML = formHtml;
+}
+
+function hideGroupForm() {
+  document.getElementById('groupFormContainer').innerHTML = '';
+  currentGroupEdit = null;
+}
+
+async function saveGroup() {
+  const name = document.getElementById('group_name').value.trim();
+  const description = document.getElementById('group_desc').value.trim();
+  const timezone = document.getElementById('group_timezone').value;
+  const digestTypes = [];
+  if (document.getElementById('digest_4h').checked) digestTypes.push('4h');
+  if (document.getElementById('digest_daily').checked) digestTypes.push('daily');
+  if (document.getElementById('digest_weekly').checked) digestTypes.push('weekly');
+  if (document.getElementById('digest_monthly').checked) digestTypes.push('monthly');
+
+  if (!name) { showToast('Name required'); return; }
+
+  try {
+    const method = currentGroupEdit ? 'PUT' : 'POST';
+    const url = currentGroupEdit ? `${API}/groups/${currentGroupEdit.id}` : `${API}/groups`;
+    await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ name, description, timezone, digestTypes })
+    });
+    showToast(currentGroupEdit ? t('groupUpdated') : t('groupCreated'));
+    hideGroupForm();
+    renderGroups();
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+async function editGroup(id) {
+  try {
+    const resp = await fetch(`${API}/groups/${id}`, { credentials: 'same-origin' });
+    const group = await resp.json();
+    showGroupForm(group);
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+async function deleteGroup(id) {
+  if (!confirm(t('confirmDelete'))) return;
+  try {
+    await fetch(`${API}/groups/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+    showToast(t('groupDeleted'));
+    renderGroups();
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+// ── Render Settings ──
+async function renderSettings() {
+  const list = document.getElementById('list');
+  list.innerHTML = `<div class="loading">${t('loading')}</div>`;
+  try {
+    const resp = await fetch(`${API}/settings`, { credentials: 'same-origin' });
+    const settings = await resp.json();
+
+    const currentTimezone = settings.global_timezone || 'UTC';
+    const currentLang = lang;
+
+    let html = `
+      <div style="margin-bottom:16px;">
+        <h2 style="margin:0 0 16px;font-size:16px;color:#e0e0e0;">${t('settingsTitle')}</h2>
+        <div class="source-form">
+          <div class="form-row">
+            <label>${t('settingsTimezone')}</label>
+            <select id="setting_timezone">
+              <option value="UTC" ${currentTimezone === 'UTC' ? 'selected' : ''}>UTC</option>
+              <option value="America/New_York" ${currentTimezone === 'America/New_York' ? 'selected' : ''}>America/New_York (EST/EDT)</option>
+              <option value="America/Los_Angeles" ${currentTimezone === 'America/Los_Angeles' ? 'selected' : ''}>America/Los_Angeles (PST/PDT)</option>
+              <option value="Europe/London" ${currentTimezone === 'Europe/London' ? 'selected' : ''}>Europe/London</option>
+              <option value="Europe/Lisbon" ${currentTimezone === 'Europe/Lisbon' ? 'selected' : ''}>Europe/Lisbon</option>
+              <option value="Europe/Paris" ${currentTimezone === 'Europe/Paris' ? 'selected' : ''}>Europe/Paris</option>
+              <option value="Asia/Singapore" ${currentTimezone === 'Asia/Singapore' ? 'selected' : ''}>Asia/Singapore</option>
+              <option value="Asia/Tokyo" ${currentTimezone === 'Asia/Tokyo' ? 'selected' : ''}>Asia/Tokyo</option>
+              <option value="Asia/Shanghai" ${currentTimezone === 'Asia/Shanghai' ? 'selected' : ''}>Asia/Shanghai</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>${t('settingsLanguage')}</label>
+            <select id="setting_language">
+              <option value="en" ${currentLang === 'en' ? 'selected' : ''}>English</option>
+              <option value="zh" ${currentLang === 'zh' ? 'selected' : ''}>中文</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="primary" onclick="saveSettings()">${t('settingsSave')}</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    list.innerHTML = html;
+  } catch (e) {
+    list.innerHTML = `<div class="empty">${t('cantLoad')}: ${e.message}</div>`;
+  }
+}
+
+async function saveSettings() {
+  const timezone = document.getElementById('setting_timezone').value;
+  const language = document.getElementById('setting_language').value;
+
+  try {
+    // Save timezone to server
+    await fetch(`${API}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ global_timezone: timezone })
+    });
+
+    // Save language locally and apply
+    localStorage.setItem('digest_lang', language);
+    lang = language;
+    applyLang();
+
+    showToast(t('settingsSaved'));
+    renderSettings(); // Re-render to show updated values
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
 function renderSmartAdd() {
   const container = document.getElementById('smartAddContainer');
   if (!container) return;
@@ -1106,6 +1504,13 @@ function renderSmartAdd() {
         <div style="font-size:11px;color:#666;margin-bottom:6px;">📄 ${t('previewRecent')}</div>
         ${resolvedSource.preview.slice(0,5).map(p => `<div style="font-size:12px;color:#aaa;padding:2px 0;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.url ? `<a href="${p.url}" target="_blank" style="color:#58a6ff;text-decoration:none;" title="${p.title}">` : ''}• ${p.title}${p.url ? '</a>' : ''}</div>`).join('')}
       </div>` : ''}
+      <div style="display:flex;flex-wrap:wrap;gap:10px 14px;margin-bottom:10px;font-size:12px;color:#aaa;">
+        <span style="color:#666;">${lang==='zh' ? '采集周期' : 'Ingestion'}:</span>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="smart_dt_4h"> 4h</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="smart_dt_daily" checked> daily</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="smart_dt_weekly"> weekly</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="smart_dt_monthly"> monthly</label>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;cursor:pointer;">
           <input type="checkbox" id="smart_public" style="width:14px;height:14px;"> ${t('publicSource')}
@@ -1151,10 +1556,16 @@ async function detectSource() {
 async function confirmSmartAdd() {
   if (!resolvedSource) return;
   const isPublic = document.getElementById('smart_public')?.checked || false;
+  const digestTypes = ['4h', 'daily', 'weekly', 'monthly'].filter(dt => document.getElementById(`smart_dt_${dt === '4h' ? '4h' : dt}`)?.checked);
+  if (!digestTypes.length) {
+    showToast(lang === 'zh' ? '请至少选择一个采集周期' : 'Select at least one ingestion type');
+    return;
+  }
   try {
-    await fetch(`${API}/sources`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
-      body: JSON.stringify({ name: resolvedSource.name, type: resolvedSource.type, config: JSON.stringify(resolvedSource.config), isPublic }) });
-    showToast(t('sourceCreated'));
+    const cfg = { ...(resolvedSource.config || {}), _digestTypes: digestTypes };
+    await apiFetchJson(`${API}/sources`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      body: JSON.stringify({ name: resolvedSource.name, type: resolvedSource.type, config: JSON.stringify(cfg), isPublic }) });
+    showToast(`${t('sourceCreated')}: ${resolvedSource.name}`);
     smartAddState = 'input'; resolvedSource = null;
     renderSources();
   } catch (e) { showToast('Error: ' + e.message); }
@@ -1168,11 +1579,12 @@ function toggleSourceForm() {
 
 async function editSourceForm(id) {
   try {
-    const r = await fetch(`${API}/sources/${id}`, { credentials: 'same-origin' });
-    editingSource = await r.json();
+    editingSource = await apiFetchJson(`${API}/sources/${id}`, { credentials: 'same-origin' });
     showSourceForm = true;
     renderSourceForm();
-  } catch {}
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
 }
 
 const SOURCE_EXAMPLES = {
@@ -1233,11 +1645,25 @@ function renderSourceForm() {
   if (!container) return;
   if (!showSourceForm) { container.innerHTML = ''; return; }
   const s = editingSource;
+  const cfgObj = parseSourceConfigObj(s?.config);
+  const digestTypes = normalizeDigestTypes(cfgObj._digestTypes);
+  const cleanCfg = { ...cfgObj };
+  delete cleanCfg._digestTypes;
+  delete cleanCfg._configId;
   const typeOptions = SOURCE_TYPES.map(t => `<option value="${t}" ${s && s.type === t ? 'selected' : ''}>${SOURCE_ICONS[t] || ''} ${t}</option>`).join('');
-  const configVal = s ? (typeof s.config === 'string' ? s.config : JSON.stringify(JSON.parse(s.config), null, 2)) : JSON.stringify(SOURCE_EXAMPLES['twitter_feed'], null, 2);
+  const configVal = s ? JSON.stringify(cleanCfg, null, 2) : JSON.stringify(SOURCE_EXAMPLES['twitter_feed'], null, 2);
   container.innerHTML = `<div class="source-form">
     <div class="form-row"><label>${t('sourceName')}</label><input id="sf_name" value="${s ? s.name : ''}" placeholder="e.g. AI Twitter Feed"></div>
     <div class="form-row"><label>${t('sourceType')}</label><select id="sf_type" onchange="onTypeChange()">${typeOptions}</select></div>
+    <div class="form-row">
+      <label>${lang==='zh' ? '采集周期' : 'Ingestion Types'}</label>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#aaa;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="sf_dt_4h" ${digestTypes.includes('4h') ? 'checked' : ''}> 4h</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="sf_dt_daily" ${digestTypes.includes('daily') ? 'checked' : ''}> daily</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="sf_dt_weekly" ${digestTypes.includes('weekly') ? 'checked' : ''}> weekly</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="sf_dt_monthly" ${digestTypes.includes('monthly') ? 'checked' : ''}> monthly</label>
+      </div>
+    </div>
     <div class="form-row"><label>${t('sourceConfig')}</label><textarea id="sf_config" style="font-family:monospace;font-size:12px;min-height:100px;">${configVal}</textarea></div>
     <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;"><label style="cursor:pointer;display:flex;align-items:center;gap:6px;margin:0;"><input type="checkbox" id="sf_public" style="width:16px;height:16px;" ${s && s.is_public ? 'checked' : ''}> ${t('sourcePublic')}</label></div>
     <div class="form-actions">
@@ -1250,16 +1676,27 @@ function renderSourceForm() {
 async function saveSource() {
   const name = document.getElementById('sf_name').value.trim();
   const type = document.getElementById('sf_type').value;
-  const config = document.getElementById('sf_config').value.trim();
+  const configText = document.getElementById('sf_config').value.trim();
   const isPublic = document.getElementById('sf_public').checked;
+  const digestTypes = ['4h', 'daily', 'weekly', 'monthly'].filter(dt => document.getElementById(`sf_dt_${dt === '4h' ? '4h' : dt}`)?.checked);
   if (!name) return;
-  try { JSON.parse(config); } catch { showToast('Invalid JSON config'); return; }
+  if (!digestTypes.length) {
+    showToast(lang === 'zh' ? '请至少选择一个采集周期' : 'Select at least one ingestion type');
+    return;
+  }
+  let cfgObj;
+  try { cfgObj = JSON.parse(configText); } catch { showToast('Invalid JSON config'); return; }
+  if (!cfgObj || typeof cfgObj !== 'object' || Array.isArray(cfgObj)) cfgObj = {};
+  const prevCfg = parseSourceConfigObj(editingSource?.config);
+  if (prevCfg._configId && !cfgObj._configId) cfgObj._configId = prevCfg._configId;
+  cfgObj._digestTypes = digestTypes;
+  const config = JSON.stringify(cfgObj);
   try {
     if (editingSource) {
-      await fetch(`${API}/sources/${editingSource.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name, type, config, isPublic }) });
+      await apiFetchJson(`${API}/sources/${editingSource.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name, type, config, isPublic }) });
       showToast(t('sourceUpdated'));
     } else {
-      await fetch(`${API}/sources`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name, type, config, isPublic }) });
+      await apiFetchJson(`${API}/sources`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ name, type, config, isPublic }) });
       showToast(t('sourceCreated'));
     }
     showSourceForm = false; editingSource = null;
@@ -1268,7 +1705,11 @@ async function saveSource() {
 }
 
 async function toggleSource(id, active) {
-  await fetch(`${API}/sources/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ isActive: active }) });
+  try {
+    await apiFetchJson(`${API}/sources/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ isActive: active }) });
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
 }
 
 async function unsubSource(id) {
@@ -1279,9 +1720,13 @@ async function unsubSource(id) {
 
 async function delSource(id) {
   if (!confirm(t('confirmDelete'))) return;
-  await fetch(`${API}/sources/${id}`, { method: 'DELETE', credentials: 'same-origin' });
-  showToast(t('sourceDeleted'));
-  renderSources();
+  try {
+    await apiFetchJson(`${API}/sources/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+    showToast(t('sourceDeleted'));
+    renderSources();
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
 }
 
 async function loadMarkedUrls() {
@@ -1571,7 +2016,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 if (location.hash) {
   const h = location.hash.substring(1);
-  if (['4h','daily','weekly','monthly','marks','sources'].includes(h)) {
+  if (['4h','daily','weekly','monthly','marks','sources','groups','settings'].includes(h)) {
     currentType = h;
     document.querySelector('.tab.active')?.classList.remove('active');
     const t = document.querySelector('.tab[data-type="'+h+'"]');

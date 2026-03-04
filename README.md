@@ -15,6 +15,7 @@ AI-powered news digest that curates thousands of sources down to the highlights 
 ## Features
 
 - 📰 **Multi-frequency digests** — 4-hourly, daily, weekly, monthly summaries
+- 🏷️ **Source Groups** — Organize sources into groups with separate digests per group
 - 📡 **Sources system** — Add Twitter feeds, RSS, HackerNews, Reddit, GitHub Trending, and more
 - 📦 **Source Packs** — Share curated source bundles with the community
 - 📌 **Mark & Deep Dive** — Bookmark content for AI-powered deep analysis
@@ -23,6 +24,7 @@ AI-powered news digest that curates thousands of sources down to the highlights 
 - 📢 **Feed output** — Subscribe to any user's digest via RSS or JSON Feed
 - 🌐 **Multi-language** — English and Chinese UI
 - 🌙 **Dark/Light mode** — Theme toggle with localStorage persistence
+- ⚙️ **Settings** — Configure global timezone and UI language preferences
 - 🖥️ **Web dashboard** — SPA for browsing and managing digests
 - 💾 **SQLite storage** — Fast, portable, zero-config database
 - 🔐 **Google OAuth** — Multi-user support with personal bookmarks and sources
@@ -99,6 +101,8 @@ Create a `.env` file in the project root:
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID | No* | - |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | No* | - |
 | `SESSION_SECRET` | Session encryption key | No* | - |
+| `GOOGLE_API_KEY` | Gemini API key for AI digest summarization | No | - |
+| `GEMINI_API_KEY` | Alternative Gemini key variable name | No | - |
 | `API_KEY` | API key for digest creation | No | - |
 | `DIGEST_PORT` | Server port | No | 8767 |
 | `ALLOWED_ORIGINS` | Allowed origins for CORS | No | localhost |
@@ -147,15 +151,49 @@ All endpoints prefixed with `/api/`.
 | `POST` | `/api/marks` | Add bookmark `{ url, title?, note? }` | Yes |
 | `DELETE` | `/api/marks/:id` | Remove bookmark | Yes |
 
+### Source Groups
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/api/groups` | List all source groups | - |
+| `GET` | `/api/groups/:id` | Get single group | - |
+| `POST` | `/api/groups` | Create group `{ name, description?, digestTypes?, timezone?, schedule? }` | - |
+| `PUT` | `/api/groups/:id` | Update group | - |
+| `DELETE` | `/api/groups/:id` | Delete group (unassigns sources first) | - |
+
+### Settings
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/api/settings` | Get all settings | - |
+| `GET` | `/api/settings/:key` | Get single setting | - |
+| `PUT` | `/api/settings` | Update settings `{ global_timezone?, default_language? }` | - |
+| `PUT` | `/api/settings/:key` | Update single setting | - |
+
 ### Sources
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/api/sources` | List user's sources | Yes |
+| `GET` | `/api/sources` | List sources (logged in: own + public, guest: public only) | Optional |
 | `POST` | `/api/sources` | Create source `{ name, type, config }` | Yes |
 | `PUT` | `/api/sources/:id` | Update source | Yes |
 | `DELETE` | `/api/sources/:id` | Soft-delete source | Yes |
-| `GET` | `/api/sources/detect` | Auto-detect source type from URL | Yes |
+| `POST` | `/api/sources/resolve` | Auto-detect source from URL `{ url }` | Yes |
+
+### Subscriptions
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/api/subscriptions` | List current user's subscribed sources | Yes |
+| `POST` | `/api/subscriptions` | Subscribe to source `{ sourceId }` | Yes |
+| `POST` | `/api/subscriptions/bulk` | Subscribe in batch `{ sourceIds: [] }` | Yes |
+| `DELETE` | `/api/subscriptions/:sourceId` | Unsubscribe source | Yes |
+
+### Public User Selections
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/api/users/:slug/sources` | List a user's selected sources (public only; self gets full list) | Optional |
 
 ### Source Packs
 
@@ -163,7 +201,7 @@ All endpoints prefixed with `/api/`.
 |--------|----------|-------------|------|
 | `GET` | `/api/packs` | Browse public packs | - |
 | `POST` | `/api/packs` | Create pack from your sources | Yes |
-| `POST` | `/api/packs/:id/install` | Install pack (subscribe to its sources) | Yes |
+| `POST` | `/api/packs/:slug/install` | Install pack (subscribe to its sources) | Yes |
 
 ### Feeds
 
@@ -195,10 +233,72 @@ handle_path /digest/* {
 }
 ```
 
+## Group-Based Digest Generation
+
+Organize your sources into groups and generate separate digests for each group automatically:
+
+### Creating Groups
+
+Use the web UI (Settings → Groups tab) or API:
+
+```bash
+curl -X POST http://127.0.0.1:8767/api/groups \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Tech News",
+    "description": "Technology and AI updates",
+    "digestTypes": ["4h-tech", "daily-tech"],
+    "timezone": "America/Los_Angeles"
+  }'
+```
+
+### Generating Digests
+
+Run a single command to generate digests for **all groups** automatically:
+
+```bash
+python3 generate-digest.py 4h-tech
+```
+
+The system will:
+1. Load all sources and groups from the database
+2. Partition sources by `group_id`
+3. Generate separate digests for each group
+4. Handle ungrouped sources as a "General" digest
+5. Store each digest with its `group_id` for filtering
+
+**Example output:**
+```
+📚 Loaded 39 sources
+🏷️  Loaded 3 active groups
+📊 Grouping summary:
+   - 3 groups with sources
+   - 4 ungrouped sources
+
+============================================================
+🔄 Processing group: Tech News
+============================================================
+✅ Sources with usable content: 15/15
+✅ Digest created! ID: 47
+
+============================================================
+📋 Final Summary
+============================================================
+✅ Successfully generated: 3 digests
+✅ Tech News: http://127.0.0.1:8767/#digest-47
+✅ Status Updates: http://127.0.0.1:8767/#digest-48
+✅ General (ungrouped): http://127.0.0.1:8767/#digest-49
+```
+
+### Custom Digest Types
+
+You can use any digest type naming convention (e.g., `4h-tech`, `daily-status`, `weekly-pt`). The system automatically handles custom types without constraints.
+
 ## Customization
 
 - **Curation rules**: Edit `templates/curation-rules.md` to control content filtering
 - **Digest format**: Edit `templates/digest-prompt.md` to customize AI output format
+- **Local sources bootstrap**: When `config.json` contains a `sources` array, the API auto-syncs them into the Sources page on server start (including `enabled` and `digestTypes` metadata)
 
 ## Source Types
 

@@ -39,6 +39,8 @@ Configure in `.env` file:
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID | For auth | - |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | For auth | - |
 | `SESSION_SECRET` | Session cookie encryption key | For auth | - |
+| `GOOGLE_API_KEY` | Gemini API key for digest summarization | For AI summaries | - |
+| `GEMINI_API_KEY` | Alternative Gemini API key variable name | For AI summaries | - |
 | `API_KEY` | Digest creation API key | For write API | - |
 | `AI_DIGEST_DB` | SQLite database path | No | `data/digest.db` |
 | `ALLOWED_ORIGINS` | CORS allowed origins | No | localhost |
@@ -53,7 +55,13 @@ Runs on port `8767` by default. Set `DIGEST_PORT` env to change.
 |--------|------|-------------|------|
 | GET | /api/digests | List digests (?type=4h\|daily\|weekly&limit=20&offset=0) | - |
 | GET | /api/digests/:id | Get single digest | - |
-| POST | /api/digests | Create digest (internal) | - |
+| POST | /api/digests | Create digest (internal) | API Key |
+| GET | /api/groups | List source groups | - |
+| POST | /api/groups | Create source group | - |
+| PUT | /api/groups/:id | Update source group | - |
+| DELETE | /api/groups/:id | Delete source group | - |
+| GET | /api/settings | Get all settings | - |
+| PUT | /api/settings | Update settings | - |
 | GET | /api/auth/google | Start Google OAuth flow | - |
 | GET | /api/auth/callback | OAuth callback endpoint | - |
 | GET | /api/auth/me | Get current user info | Yes |
@@ -67,6 +75,34 @@ Runs on port `8767` by default. Set `DIGEST_PORT` env to change.
 ## Web Dashboard
 
 Serve `web/index.html` via your reverse proxy or any static file server.
+
+**Features:**
+- Browse digests with dark/light mode toggle
+- **Groups tab** — Organize sources into groups with separate digests
+- **Settings tab** — Configure global timezone and UI language
+- Multi-language support (English/Chinese)
+- Bookmark content for deep analysis
+
+## Group-Based Digest Generation
+
+Organize sources into groups and generate separate digests automatically:
+
+```bash
+# Create a group via API
+curl -X POST http://127.0.0.1:8767/api/groups \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Tech News","digestTypes":["4h-tech"]}'
+
+# Generate digests for all groups in one command
+python3 generate-digest.py 4h-tech
+```
+
+The system automatically:
+- Loads all sources and groups
+- Partitions sources by group
+- Generates separate digests per group
+- Handles ungrouped sources as "General"
+- Stores each digest with its `group_id`
 
 ## Templates
 
