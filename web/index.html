@@ -1603,10 +1603,19 @@ async function editSourceForm(id) {
 async function editSourceInline(id) {
   try {
     console.log(`editSourceInline called with id=${id}`);
+
+    // Save scroll position before re-render
+    const scrollY = window.scrollY;
+    const cardElement = document.getElementById(`source-card-${id}`);
+    const cardOffsetTop = cardElement ? cardElement.offsetTop : 0;
+
     editingSource = await apiFetchJson(`${API}/sources/${id}`, { credentials: 'same-origin' });
     console.log('editingSource loaded:', editingSource);
     showSourceForm = false; // Don't show bottom form
     renderSources(); // Re-render to show inline form placeholder
+
+    // Restore scroll position after re-render
+    window.scrollTo(0, scrollY);
 
     // Wait for container to exist in DOM (with timeout)
     const waitForContainer = () => {
@@ -1630,6 +1639,14 @@ async function editSourceInline(id) {
 
     await waitForContainer();
     await renderInlineSourceForm(id);
+
+    // Scroll to the editing card to keep it in view
+    requestAnimationFrame(() => {
+      const editCard = document.getElementById(`source-card-${id}`);
+      if (editCard) {
+        editCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
   } catch (e) {
     showToast('Error: ' + e.message);
     console.error('Edit inline error:', e);
@@ -1720,6 +1737,9 @@ async function saveSourceInline(sourceId) {
     const payload = { name, type, config, isPublic };
     if (groupId) payload.groupId = parseInt(groupId);
 
+    // Save scroll position before re-render
+    const scrollY = window.scrollY;
+
     await apiFetchJson(`${API}/sources/${sourceId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -1729,14 +1749,27 @@ async function saveSourceInline(sourceId) {
     showToast(t('sourceUpdated'));
     editingSource = null;
     renderSources();
+
+    // Restore scroll position after re-render
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY);
+    });
   } catch (e) {
     showToast('Error: ' + e.message);
   }
 }
 
 function cancelInlineEdit() {
+  // Save scroll position before re-render
+  const scrollY = window.scrollY;
+
   editingSource = null;
   renderSources();
+
+  // Restore scroll position after re-render
+  requestAnimationFrame(() => {
+    window.scrollTo(0, scrollY);
+  });
 }
 
 const SOURCE_EXAMPLES = {
