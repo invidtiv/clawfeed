@@ -1607,12 +1607,29 @@ async function editSourceInline(id) {
     console.log('editingSource loaded:', editingSource);
     showSourceForm = false; // Don't show bottom form
     renderSources(); // Re-render to show inline form placeholder
-    // Use requestAnimationFrame to ensure DOM is updated before populating form
-    requestAnimationFrame(() => {
-      requestAnimationFrame(async () => {
-        await renderInlineSourceForm(id);
+
+    // Wait for container to exist in DOM (with timeout)
+    const waitForContainer = () => {
+      return new Promise((resolve) => {
+        let attempts = 0;
+        const checkContainer = () => {
+          const container = document.getElementById(`inline-form-${id}`);
+          if (container) {
+            console.log(`Container found after ${attempts} attempts`);
+            resolve();
+          } else if (attempts++ < 50) { // Try for ~500ms
+            requestAnimationFrame(checkContainer);
+          } else {
+            console.error('Container not found after timeout');
+            resolve(); // Continue anyway to trigger error handling
+          }
+        };
+        requestAnimationFrame(checkContainer);
       });
-    });
+    };
+
+    await waitForContainer();
+    await renderInlineSourceForm(id);
   } catch (e) {
     showToast('Error: ' + e.message);
     console.error('Edit inline error:', e);
