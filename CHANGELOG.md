@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.9.1 — 2026-03-05
+### ✨ New
+- **Autonomous Telegram posting** — Digests are posted directly to Telegram immediately after generation, with no manual step required
+  - Each source group can have a dedicated `telegram_thread_id` (topic thread) and optional `telegram_chat_id` override
+  - Configurable via the Groups UI — Thread ID and Chat ID fields added to the group form
+  - Uses the bot token from `.env` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`)
+  - Groups without a thread ID configured are silently skipped
+- **Built-in scheduler** — Node.js server now runs digest generation autonomously on each group's configured schedule
+  - 60-second tick reads all active groups from the DB and fires `generate-digest.py` when the current time matches the group's `schedule.at` times
+  - Fully timezone-aware via `Intl.DateTimeFormat` with per-group `timezone`
+  - Supports `"on": "weekday"` / `"on": "weekend"` / `"on": "Monday"` modifiers
+  - Deduplication prevents double-firing within the same minute
+- **`--post-telegram` flag** — `generate-digest.py` can now post to Telegram inline: `python3 generate-digest.py 4h-pt --post-telegram`
+- **`--group-id=N` flag** — Run digest generation for a single group only: `python3 generate-digest.py daily --group-id=3`
+- **Group schedule UI** — Schedule JSON field added to the group form (e.g. `{"at":["08:00","20:00"]}`)
+- **Group card badges** — Thread ID and scheduled times now visible on group cards in the Groups tab
+- **systemd service** — `clawfeed.service` user systemd unit created at `~/.config/systemd/user/clawfeed.service` for auto-start on login with restart-on-failure
+
+### 🔧 Database
+- **Migration 012** — Added `telegram_thread_id INTEGER` and `telegram_chat_id TEXT` columns to `source_groups`; added global `telegram_bot_token` and `telegram_chat_id` keys to `settings`
+- Python script self-applies migration 012 DDL at startup if columns are missing (no dependency on Node server having run first)
+
+### 🌐 API
+- `PUT /api/groups/:id` now accepts and persists `telegram_thread_id` and `telegram_chat_id`
+- `POST /api/groups` now accepts `telegram_thread_id` and `telegram_chat_id` on creation
+- `GET /api/groups` and `GET /api/groups/:id` return the new Telegram fields
+
+### 🔧 Internal
+- Telegram sending functions (`send_message`, `split_content`, `post_digest_to_topic`) consolidated into `generate-digest.py` — `post-to-telegram.py` retained for manual/emergency use
+- `src/server.mjs` imports `child_process.spawn` to manage scheduled Python subprocess invocations
+- Telegram credentials moved from hardcoded values in `post-to-telegram.py` to `.env`
+
 ## v0.9.0 — 2026-03-04
 ### ✨ New
 - **Source Groups** — Organize sources into groups with separate digests per group (#TBD)

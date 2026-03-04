@@ -126,6 +126,18 @@ export function getDb(dbPath) {
     if (!e.message.includes('already exists') && !e.message.includes('no such table')) console.error('Migration 011:', e.message);
   }
 
+  // Migration 012: Telegram configuration per source group
+  try {
+    const sql12 = readFileSync(join(ROOT, 'migrations', '012_telegram_config.sql'), 'utf8');
+    for (const stmt of sql12.split(';').filter(s => s.trim())) {
+      try { _db.exec(stmt + ';'); } catch (e) {
+        if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) throw e;
+      }
+    }
+  } catch (e) {
+    if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) console.error('Migration 012:', e.message);
+  }
+
   // Backfill slugs for existing users
   _backfillSlugs(_db);
   return _db;
@@ -533,15 +545,15 @@ export function getSourceGroup(db, id) {
   return db.prepare('SELECT * FROM source_groups WHERE id = ?').get(id);
 }
 
-export function createSourceGroup(db, { name, description = '', digestTypes = '[]', timezone = 'UTC', schedule = '{}' }) {
+export function createSourceGroup(db, { name, description = '', digestTypes = '[]', timezone = 'UTC', schedule = '{}', telegram_thread_id = null, telegram_chat_id = null }) {
   const result = db.prepare(
-    'INSERT INTO source_groups (name, description, digest_types, timezone, schedule) VALUES (?, ?, ?, ?, ?)'
-  ).run(name, description, digestTypes, timezone, schedule);
+    'INSERT INTO source_groups (name, description, digest_types, timezone, schedule, telegram_thread_id, telegram_chat_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(name, description, digestTypes, timezone, schedule, telegram_thread_id, telegram_chat_id);
   return { id: result.lastInsertRowid };
 }
 
 export function updateSourceGroup(db, id, patch) {
-  const allowed = ['name', 'description', 'digest_types', 'timezone', 'schedule', 'is_active'];
+  const allowed = ['name', 'description', 'digest_types', 'timezone', 'schedule', 'is_active', 'telegram_thread_id', 'telegram_chat_id'];
   const sets = [];
   const params = [];
   for (const [k, v] of Object.entries(patch)) {

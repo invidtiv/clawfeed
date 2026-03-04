@@ -44,6 +44,8 @@ Configure in `.env` file:
 | `API_KEY` | Digest creation API key | For write API | - |
 | `AI_DIGEST_DB` | SQLite database path | No | `data/digest.db` |
 | `ALLOWED_ORIGINS` | CORS allowed origins | No | localhost |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token for autonomous posting | For Telegram | - |
+| `TELEGRAM_CHAT_ID` | Telegram supergroup chat ID (default for all groups) | For Telegram | - |
 
 ## API Server
 
@@ -88,21 +90,53 @@ Serve `web/index.html` via your reverse proxy or any static file server.
 Organize sources into groups and generate separate digests automatically:
 
 ```bash
-# Create a group via API
-curl -X POST http://127.0.0.1:8767/api/groups \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Tech News","digestTypes":["4h-tech"]}'
-
-# Generate digests for all groups in one command
+# Generate digests for all groups matching a type
 python3 generate-digest.py 4h-tech
+
+# Generate for a single group only
+python3 generate-digest.py 4h-pt --group-id=3
+
+# Generate and immediately post to Telegram
+python3 generate-digest.py daily --post-telegram
+
+# Both flags together (typical autonomous use)
+python3 generate-digest.py 4h-pt --post-telegram --group-id=3
 ```
 
 The system automatically:
-- Loads all sources and groups
+- Loads all sources and groups from the DB
 - Partitions sources by group
 - Generates separate digests per group
 - Handles ungrouped sources as "General"
 - Stores each digest with its `group_id`
+- Posts to each group's configured Telegram thread (when `--post-telegram` is set)
+
+## Autonomous Scheduling
+
+The Node.js server includes a built-in 60-second scheduler that fires `generate-digest.py` per group based on the `schedule` JSON field stored in `source_groups`.
+
+**Schedule format:**
+```json
+{"at": ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]}
+{"at": ["08:00"], "on": "Monday"}
+{"at": ["09:00"], "on": "weekday"}
+```
+
+Times are evaluated in the group's `timezone`. Configure schedules and Telegram thread IDs via the **Groups** tab in the web dashboard.
+
+**systemd service** (user-level, auto-starts on login):
+```bash
+systemctl --user status clawfeed
+systemctl --user restart clawfeed
+journalctl --user -u clawfeed -f
+```
+
+## Telegram Setup
+
+1. Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in `.env`
+2. In the web dashboard **Groups** tab, edit each group and set its **Telegram Thread ID** (the topic/thread ID within the supergroup)
+3. Test manually: `python3 generate-digest.py daily --post-telegram --group-id=<id>`
+4. The Node server scheduler handles the rest — no cron jobs needed
 
 ## Templates
 

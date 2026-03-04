@@ -477,6 +477,8 @@ unique sources << 1M（热门源大量重叠）
 ### 已完成 ✅
 
 - **v0.1–v0.5** — 基础 Digest 浏览、SQLite 存储、i18n、Google OAuth、Sources CRUD、Source Packs 分享、JSON/RSS Feed、Mark 收藏
+- **v0.9.0** — Source Groups（按组生成独立 Digest），Settings 表，自定义 Digest 类型
+- **v0.9.1** — **Telegram 自动推送** ✅ — 每个 Group 配置 `telegram_thread_id`，生成 Digest 后立即推送到对应 Telegram 话题；内置 Node.js 调度器（60s 轮询）按 Group 的 `schedule` 自动触发，无需外部 cron；`generate-digest.py` 新增 `--post-telegram` 和 `--group-id=N` 标志；systemd user service 管理 Node 服务器
 
 ### 近期 🔨
 
@@ -505,7 +507,7 @@ unique sources << 1M（热门源大量重叠）
 
 #### 3. Channel 推送
 Digest 通过多渠道主动分发，用户选择接收方式：
-- **Telegram Bot** — 定时推送 + 按需查询
+- **Telegram Bot** — 定时推送 + 按需查询 ✅（v0.9.1 已完成：按 Group 推送到独立话题）
 - **Feishu/Lark** — 群机器人 / DM 推送
 - **Email** — 定期邮件摘要（daily/weekly）
 - **Slack** — Webhook / Bot 集成

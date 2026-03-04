@@ -11,6 +11,7 @@ import os
 import sys
 import json
 import sqlite3
+import time
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -39,6 +40,7 @@ def load_env_file(env_path):
             os.environ[key] = value
 
 ROOT = Path(__file__).resolve().parent
+TEMPLATES_DIR = ROOT / "templates"
 load_env_file(ROOT / ".env")
 
 # Config
@@ -46,6 +48,8 @@ API_KEY = os.environ.get("API_KEY", "0221f247a74a6ae5776b87e4a224d326cd22430be3a
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8767/api/digests")
 GEMINI_API_KEY = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY", "")
 DB_PATH = Path(os.environ.get("DIGEST_DB") or os.environ.get("AI_DIGEST_DB") or (ROOT / "data" / "digest.db"))
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = int(os.environ.get("TELEGRAM_CHAT_ID", "0") or "0")
 LAST_GEMINI_ERROR = ""
 
 ALLOWED_DIGEST_TYPES = {"4h", "4h-tech", "4h-status", "4h-pt", "daily", "weekly", "monthly"}
@@ -270,9 +274,19 @@ def load_groups_from_db():
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     try:
+        # Ensure telegram columns exist (migration 012 may not have run via Node yet)
+        for col, typedef in [('telegram_thread_id', 'INTEGER DEFAULT NULL'),
+                              ('telegram_chat_id', 'TEXT DEFAULT NULL')]:
+            try:
+                conn.execute(f'ALTER TABLE source_groups ADD COLUMN {col} {typedef}')
+                conn.commit()
+            except Exception:
+                pass  # column already exists
+
         rows = conn.execute(
             """
-            SELECT id, name, description, digest_types, timezone, is_active
+            SELECT id, name, description, digest_types, timezone, is_active,
+                   telegram_thread_id, telegram_chat_id
             FROM source_groups
             WHERE is_active = 1
             ORDER BY id ASC
@@ -286,7 +300,9 @@ def load_groups_from_db():
                 'name': r['name'],
                 'description': r['description'],
                 'digest_types': json.loads(r['digest_types'] or '[]'),
-                'timezone': r['timezone'] or 'UTC'
+                'timezone': r['timezone'] or 'UTC',
+                'telegram_thread_id': r['telegram_thread_id'],
+                'telegram_chat_id': r['telegram_chat_id'],
             }
         return groups
     except Exception as e:
@@ -507,7 +523,19 @@ def annotate_source_items(source_name, items):
         annotated.append(f"• {source_name}: {text}")
     return annotated
 
-def generate_with_gemini(content):
+def load_prompt_for_group(group_name):
+    """Load group-specific prompt template if available."""
+    if not group_name:
+        return None
+    # Normalize group name for filename - handle emoji first, then lowercase
+    normalized = group_name.replace('🎶', '').strip().lower().replace(' ', '-')
+    prompt_path = TEMPLATES_DIR / 'prompts' / f'{normalized}.md'
+    if prompt_path.exists():
+        return prompt_path.read_text(encoding='utf-8')
+    return None
+
+
+def generate_with_gemini(content, group_name=None, group_tz='Europe/Lisbon'):
     """Generate digest using Gemini API"""
     global LAST_GEMINI_ERROR
     LAST_GEMINI_ERROR = ""
@@ -516,13 +544,24 @@ def generate_with_gemini(content):
         print(f"⚠️ {LAST_GEMINI_ERROR}, fallback to raw aggregation.")
         return None
     
-    highlights_target = max(12, min(32, len(content) // 8))
-    prompt = f"""You are a tech news curator. Create a structured daily digest from the following sources.
+    # Try to load group-specific prompt
+    group_prompt = load_prompt_for_group(group_name)
+    
+    if group_prompt:
+        # Use group-specific prompt template
+        highlights_target = max(12, min(32, len(content) // 8))
+        current_time = datetime.now().strftime('%A, %B %d, %Y')
+        prompt = group_prompt.replace('{{date}}', current_time).replace('{{timezone}}', group_tz).replace('{{highlights_count}}', str(highlights_target))
+        prompt += f"\n\nSOURCES:\n{chr(10).join(content)}"
+    else:
+        # Default tech-focused prompt
+        highlights_target = max(12, min(32, len(content) // 8))
+        prompt = f"""You are a tech news curator. Create a structured daily digest from the following sources.
 Focus on AI research, prompt engineering, LLM management, hardware (ESP32), and modern dev stacks (Vercel/Supabase).
 Ensure broad source coverage; do not over-focus on a single outlet.
 
 FORMAT:
-☀️ ClawFeed | {datetime.now().strftime('%A, %B %d, %Y')} Europe/Lisbon
+☀️ ClawFeed | {datetime.now().strftime('%A, %B %d, %Y')} {group_tz}
 
 🔥 Important (2-3 truly significant items)
 • **[Headline]** — [2-3 sentence summary with key details, why it matters, and any actionable insights]
@@ -674,7 +713,7 @@ def generate_digest_for_group(group_id, group_info, sources_in_group, digest_typ
 
     # Try Gemini summarization
     print("🤖 Attempting Gemini summarization...")
-    digest = generate_with_gemini(all_content)
+    digest = generate_with_gemini(all_content, group_name=group_name, group_tz=group_tz)
     generated_by = 'gemini' if digest else 'fallback'
 
     if not digest:
@@ -715,17 +754,159 @@ Note: Gemini summarization unavailable — showing aggregated feeds with basic f
     if digest_id:
         print(f"✅ Digest created! ID: {digest_id}")
         print(f"📖 View: http://127.0.0.1:8767/#digest-{digest_id}")
+        if POST_TELEGRAM:
+            post_group_digest_to_telegram(digest_id, group_info)
         return digest_id
     else:
         print(f"❌ Failed to create digest for group '{group_name}'")
         return None
 
 
+# ── Telegram posting ──────────────────────────────────────────────────────────
+
+def _tg_send_message(text, thread_id, bot_token, chat_id):
+    """Send a message to a Telegram topic thread."""
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "message_thread_id": thread_id,
+        "text": text,
+        "parse_mode": "HTML"
+    }
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(data).encode(),
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read())
+            return result.get('ok', False)
+    except Exception as e:
+        print(f"❌ Telegram send error: {e}")
+        return False
+
+
+def _tg_split_content(content, max_len=3800):
+    """Split content into chunks under max_len characters."""
+    chunks = []
+    sections = content.split('\n\n')
+    current_chunk = ""
+    for section in sections:
+        if len(current_chunk) + len(section) + 2 > max_len:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+            current_chunk = section
+        else:
+            if current_chunk:
+                current_chunk += "\n\n"
+            current_chunk += section
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    final_chunks = []
+    for chunk in chunks:
+        if len(chunk) <= max_len:
+            final_chunks.append(chunk)
+        else:
+            lines = chunk.split('\n')
+            current = ""
+            for line in lines:
+                if len(current) + len(line) + 1 > max_len:
+                    if current:
+                        final_chunks.append(current.strip())
+                    current = line
+                else:
+                    if current:
+                        current += "\n"
+                    current += line
+            if current:
+                final_chunks.append(current.strip())
+    return final_chunks
+
+
+def _tg_post_digest(digest, topic_name, thread_id, bot_token, chat_id):
+    """Post digest content split into Telegram messages."""
+    content = digest.get('content', '')
+    digest_id = digest.get('id')
+    if not content:
+        print("⚠️ Empty digest content, skipping Telegram post")
+        return False
+    content = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    header = f"<b>📰 {topic_name}</b>\n{'='*30}\n\n"
+    chunks = _tg_split_content(header + content)
+    print(f"  → Splitting into {len(chunks)} message(s)")
+    for i, chunk in enumerate(chunks, 1):
+        if len(chunks) > 1:
+            chunk += f"\n\n<i>(Part {i}/{len(chunks)})</i>"
+        if _tg_send_message(chunk, thread_id, bot_token, chat_id):
+            print(f"  ✅ Part {i}/{len(chunks)}")
+        else:
+            print(f"  ❌ Part {i}/{len(chunks)} failed")
+            return False
+        if i < len(chunks):
+            time.sleep(1)
+    footer = f"\n🔗 <a href='http://127.0.0.1:8767/#digest-{digest_id}'>View on ClawFeed</a>"
+    _tg_send_message(footer, thread_id, bot_token, chat_id)
+    return True
+
+
+def post_group_digest_to_telegram(digest_id, group_info):
+    """Post a just-generated digest to the group's configured Telegram thread."""
+    thread_id = group_info.get('telegram_thread_id')
+    if not thread_id:
+        return  # not configured for this group
+    bot_token = TELEGRAM_BOT_TOKEN
+    chat_id = group_info.get('telegram_chat_id') or TELEGRAM_CHAT_ID
+    if not bot_token or not chat_id:
+        print("⚠️ Telegram not configured (missing BOT_TOKEN or CHAT_ID), skipping")
+        return
+    try:
+        req = urllib.request.Request(
+            f"{API_URL}/{digest_id}",
+            headers={'Authorization': f'Bearer {API_KEY}'}
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            digest = json.loads(resp.read())
+    except Exception as e:
+        print(f"❌ Could not fetch digest {digest_id} for Telegram: {e}")
+        return
+    topic_name = group_info.get('name', 'ClawFeed')
+    print(f"📤 Posting to Telegram thread {thread_id} ({topic_name})...")
+    _tg_post_digest(digest, topic_name, int(thread_id), bot_token, int(chat_id))
+
+
+# Global flags (set in main() after arg parsing)
+POST_TELEGRAM = False
+GROUP_ID_FILTER = None
+
+
 def main():
-    digest_type = sys.argv[1] if len(sys.argv) > 1 else 'daily'
+    global POST_TELEGRAM, GROUP_ID_FILTER
+
+    # Parse flags before positional args
+    args = []
+    for arg in sys.argv[1:]:
+        if arg == '--post-telegram':
+            POST_TELEGRAM = True
+        elif arg.startswith('--group-id='):
+            try:
+                GROUP_ID_FILTER = int(arg.split('=', 1)[1])
+            except ValueError:
+                print(f"❌ Invalid --group-id value: {arg}")
+                sys.exit(1)
+        elif not arg.startswith('--'):
+            args.append(arg)
+
+    digest_type = args[0] if args else 'daily'
     if digest_type not in ALLOWED_DIGEST_TYPES:
         print(f"❌ Invalid digest type '{digest_type}'. Allowed: {', '.join(sorted(ALLOWED_DIGEST_TYPES))}")
         sys.exit(1)
+
+    if GROUP_ID_FILTER is not None:
+        print(f"🎯 Running for group ID {GROUP_ID_FILTER} only")
+    if POST_TELEGRAM:
+        print("📤 Telegram posting enabled")
 
     # Load sources and groups
     sources, db_count, cfg_count, cfg_extras = load_sources()
@@ -781,6 +962,8 @@ def main():
     results = []
 
     for group_id, group_sources in grouped_sources.items():
+        if GROUP_ID_FILTER is not None and group_id != GROUP_ID_FILTER:
+            continue
         group = groups.get(group_id)
         if not group:
             print(f"⚠️ Warning: Group {group_id} not found in groups dict, skipping...")
@@ -804,7 +987,7 @@ def main():
             results.append({'group': group_name, 'digest_id': None, 'success': False})
 
     # Handle ungrouped sources as a "General" digest
-    if ungrouped_sources:
+    if ungrouped_sources and GROUP_ID_FILTER is None:
         print(f"\n{'='*60}")
         print(f"🔄 Processing ungrouped sources")
         print(f"{'='*60}")

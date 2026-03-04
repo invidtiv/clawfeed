@@ -3,6 +3,7 @@ import http from 'http';
 import https from 'https';
 import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
+import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { randomBytes, createHmac, timingSafeEqual } from 'crypto';
 import { lookup } from 'dns/promises';
@@ -972,7 +973,9 @@ const server = createServer(async (req, res) => {
         description: body.description || '',
         digestTypes,
         timezone: body.timezone || 'UTC',
-        schedule
+        schedule,
+        telegram_thread_id: body.telegram_thread_id ?? null,
+        telegram_chat_id: body.telegram_chat_id ?? null
       });
       return json(res, result, 201);
     }
@@ -1039,3 +1042,75 @@ server.listen(PORT, HOST, () => {
   console.log(`🚀 ClawFeed API running on http://${HOST}:${PORT}`);
   console.log(`📡 Accessible via Tailscale at http://vmi2916953.tail652dda.ts.net:${PORT}`);
 });
+
+// ── Autonomous digest scheduler ───────────────────────────────────────────────
+
+const PYTHON_SCRIPT = join(__dirname, '..', 'generate-digest.py');
+
+/**
+ * Returns true if the current wall-clock time (in the given timezone) matches
+ * any of the `at` times in the schedule, and optionally the `on` weekday.
+ * Schedule format: {"at": ["08:00", "20:00"], "on": "Monday"|"weekday"|"weekend"}
+ */
+function shouldFireNow(schedule, timezone) {
+  if (!schedule || !Array.isArray(schedule.at) || !schedule.at.length) return false;
+  const tz = timezone || 'UTC';
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    hour: '2-digit', minute: '2-digit', hour12: false,
+    weekday: 'long'
+  }).formatToParts(new Date());
+  const hour    = parts.find(p => p.type === 'hour').value.padStart(2, '0');
+  const minute  = parts.find(p => p.type === 'minute').value.padStart(2, '0');
+  const weekday = parts.find(p => p.type === 'weekday').value.toLowerCase();
+  const hhmm = `${hour}:${minute}`;
+  if (!schedule.at.includes(hhmm)) return false;
+  if (schedule.on) {
+    const on = schedule.on.toLowerCase();
+    const weekdays = ['monday','tuesday','wednesday','thursday','friday'];
+    const weekend  = ['saturday','sunday'];
+    if (on === 'weekday' && !weekdays.includes(weekday)) return false;
+    if (on === 'weekend' && !weekend.includes(weekday))  return false;
+    if (!['weekday','weekend'].includes(on) && weekday !== on) return false;
+  }
+  return true;
+}
+
+const _schedulerFired = new Set();
+
+setInterval(() => {
+  const db = getDb();
+  const groups = listSourceGroups(db, { activeOnly: true });
+  const minuteKey = new Date().toISOString().slice(0, 16); // "2026-03-04T08:00"
+
+  for (const g of groups) {
+    let schedule;
+    try { schedule = JSON.parse(g.schedule || '{}'); } catch { continue; }
+    let digestTypes;
+    try { digestTypes = JSON.parse(g.digest_types || '[]'); } catch { digestTypes = []; }
+
+    if (!digestTypes.length) continue;
+    if (!shouldFireNow(schedule, g.timezone)) continue;
+
+    const fireKey = `${g.id}:${minuteKey}`;
+    if (_schedulerFired.has(fireKey)) continue;
+    _schedulerFired.add(fireKey);
+
+    // Trim old keys to prevent unbounded growth
+    if (_schedulerFired.size > 500) {
+      const keys = [..._schedulerFired];
+      keys.slice(0, 200).forEach(k => _schedulerFired.delete(k));
+    }
+
+    const digestType = digestTypes[0];
+    console.log(`[scheduler] Firing group "${g.name}" (id=${g.id}) type=${digestType}`);
+
+    const proc = spawn('python3', [PYTHON_SCRIPT, digestType, '--post-telegram', `--group-id=${g.id}`], {
+      env: { ...process.env },
+      cwd: join(__dirname, '..')
+    });
+    proc.stdout.on('data', d => process.stdout.write(`[${g.name}] ${d}`));
+    proc.stderr.on('data', d => process.stderr.write(`[${g.name}] ${d}`));
+    proc.on('close', code => console.log(`[scheduler] Group "${g.name}" finished (exit=${code})`));
+  }
+}, 60_000);

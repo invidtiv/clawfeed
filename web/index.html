@@ -1302,6 +1302,8 @@ async function renderGroups() {
             <div class="source-meta">
               <span>⏰ ${g.timezone}</span>
               <span>📊 ${digestTypes}</span>
+              ${g.telegram_thread_id ? `<span>📨 Thread ${g.telegram_thread_id}</span>` : '<span style="color:#555;">No Telegram</span>'}
+              ${(() => { try { const s = typeof g.schedule === 'object' ? g.schedule : JSON.parse(g.schedule || '{}'); return s?.at?.length ? `<span>🕐 ${s.at.join(', ')}${s.on ? ' ('+s.on+')' : ''}</span>` : ''; } catch { return ''; } })()}
             </div>
           </div>
         `;
@@ -1355,6 +1357,19 @@ function showGroupForm(group = null) {
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_monthly" ${group?.digest_types?.includes('monthly') ? 'checked' : ''}> Monthly</label>
         </div>
       </div>
+      <div class="form-row">
+        <label>Schedule (JSON)</label>
+        <input type="text" id="group_schedule" value="${group?.schedule && Object.keys(group.schedule).length ? JSON.stringify(group.schedule) : ''}" placeholder='{"at":["08:00","20:00"]} or {"at":["09:00"],"on":"Monday"}'>
+        <div style="font-size:11px;color:#666;margin-top:4px;">Times in group timezone. Optional "on": "weekday" / "weekend" / "Monday" etc.</div>
+      </div>
+      <div class="form-row">
+        <label>Telegram Thread ID</label>
+        <input type="number" id="group_tg_thread" value="${group?.telegram_thread_id || ''}" placeholder="e.g. 173 (topic thread ID)">
+      </div>
+      <div class="form-row">
+        <label>Telegram Chat ID (override)</label>
+        <input type="text" id="group_tg_chat" value="${group?.telegram_chat_id || ''}" placeholder="Leave blank to use global TELEGRAM_CHAT_ID">
+      </div>
       <div class="form-actions">
         <button class="primary" onclick="saveGroup()">${t('save')}</button>
         <button onclick="hideGroupForm()">${t('cancel')}</button>
@@ -1379,6 +1394,16 @@ async function saveGroup() {
   if (document.getElementById('digest_weekly').checked) digestTypes.push('weekly');
   if (document.getElementById('digest_monthly').checked) digestTypes.push('monthly');
 
+  let schedule = {};
+  const scheduleVal = document.getElementById('group_schedule')?.value.trim();
+  if (scheduleVal) {
+    try { schedule = JSON.parse(scheduleVal); } catch { showToast('Invalid schedule JSON'); return; }
+  }
+  const tgThreadRaw = document.getElementById('group_tg_thread')?.value.trim();
+  const tgChatRaw   = document.getElementById('group_tg_chat')?.value.trim();
+  const telegram_thread_id = tgThreadRaw ? parseInt(tgThreadRaw, 10) : null;
+  const telegram_chat_id   = tgChatRaw || null;
+
   if (!name) { showToast('Name required'); return; }
 
   try {
@@ -1388,7 +1413,7 @@ async function saveGroup() {
       method,
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ name, description, timezone, digestTypes })
+      body: JSON.stringify({ name, description, timezone, digestTypes, schedule, telegram_thread_id, telegram_chat_id })
     });
     showToast(currentGroupEdit ? t('groupUpdated') : t('groupCreated'));
     hideGroupForm();
