@@ -330,11 +330,11 @@ export function createSource(db, { name, type, config = '{}', isPublic = 0, crea
 }
 
 export function updateSource(db, id, patch) {
-  const allowed = ['name', 'type', 'config', 'is_active', 'is_public'];
+  const allowed = ['name', 'type', 'config', 'is_active', 'is_public', 'group_id'];
   const sets = [];
   const params = [];
   for (const [k, v] of Object.entries(patch)) {
-    const col = k === 'isActive' ? 'is_active' : k === 'isPublic' ? 'is_public' : k;
+    const col = k === 'isActive' ? 'is_active' : k === 'isPublic' ? 'is_public' : k === 'groupId' ? 'group_id' : k;
     if (allowed.includes(col)) {
       sets.push(`${col} = ?`);
       params.push(typeof v === 'boolean' ? (v ? 1 : 0) : v);

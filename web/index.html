@@ -1008,15 +1008,27 @@ function renderSourceCard(s, opts = {}) {
   const showEdit = !!opts.showEdit;
   const showDelete = !!opts.showDelete;
   const showUnsub = !!opts.showUnsub;
-  return `<div class="source-card" style="padding:12px 16px;">
+
+  // Check if this source is being edited inline
+  const isEditing = editingSource && editingSource.id === s.id;
+
+  if (isEditing) {
+    // Render inline edit form
+    return `<div class="source-card" id="source-card-${s.id}" style="padding:12px 16px;">
+      <div id="inline-form-${s.id}"></div>
+    </div>`;
+  }
+
+  return `<div class="source-card" id="source-card-${s.id}" style="padding:12px 16px;">
     <div class="source-header">
       <span class="source-name" style="font-size:14px;">${icon} ${s.name}${s.is_public ? ' <span style="font-size:11px;color:#666;font-weight:400;">🌐</span>' : ''}
         <span style="font-size:11px;color:#6cf;background:#1a1a2e;padding:1px 6px;border-radius:3px;margin-left:4px;">${s.type}</span>
+        ${s.group_id ? ' <span style="font-size:11px;color:#8f8;background:#1a2e1a;padding:1px 6px;border-radius:3px;margin-left:4px;">🏷️ Group</span>' : ''}
       </span>
       <div class="source-actions" style="gap:6px;">
         ${showToggle ? `<label class="toggle-switch" title="Active"><input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleSource(${s.id}, this.checked)"><span class="toggle-slider"></span></label>` : ''}
         ${showUnsub ? `<button class="danger" onclick="unsubSource(${s.id})" style="font-size:11px;padding:3px 8px;" title="${lang==='zh'?'退订':'Unsubscribe'}">✕</button>` : ''}
-        ${showEdit ? `<button onclick="editSourceForm(${s.id})" style="font-size:11px;padding:3px 8px;">${t('editSource')}</button>` : ''}
+        ${showEdit ? `<button onclick="editSourceInline(${s.id})" style="font-size:11px;padding:3px 8px;">${t('editSource')}</button>` : ''}
         ${showDelete ? `<button class="danger" onclick="delSource(${s.id})" style="font-size:11px;padding:3px 8px;">${t('deleteSource')}</button>` : ''}
       </div>
     </div>
@@ -1585,6 +1597,115 @@ async function editSourceForm(id) {
   } catch (e) {
     showToast('Error: ' + e.message);
   }
+}
+
+async function editSourceInline(id) {
+  try {
+    editingSource = await apiFetchJson(`${API}/sources/${id}`, { credentials: 'same-origin' });
+    showSourceForm = false; // Don't show bottom form
+    renderSources(); // Re-render to show inline form
+    // After re-render, populate the inline form
+    setTimeout(async () => {
+      await renderInlineSourceForm(id);
+    }, 100);
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+async function renderInlineSourceForm(sourceId) {
+  const container = document.getElementById(`inline-form-${sourceId}`);
+  if (!container || !editingSource) return;
+
+  // Fetch groups for the dropdown
+  let groupsHtml = '<option value="">None (No group)</option>';
+  try {
+    const groups = await apiFetchJson(`${API}/groups`, { credentials: 'same-origin' });
+    groupsHtml += groups.map(g =>
+      `<option value="${g.id}" ${editingSource.group_id === g.id ? 'selected' : ''}>${g.name}</option>`
+    ).join('');
+  } catch (e) {
+    console.error('Failed to load groups:', e);
+  }
+
+  const s = editingSource;
+  const cfgObj = parseSourceConfigObj(s?.config);
+  const digestTypes = normalizeDigestTypes(cfgObj._digestTypes);
+  const cleanCfg = { ...cfgObj };
+  delete cleanCfg._digestTypes;
+  delete cleanCfg._configId;
+  const typeOptions = SOURCE_TYPES.map(t => `<option value="${t}" ${s && s.type === t ? 'selected' : ''}>${SOURCE_ICONS[t] || ''} ${t}</option>`).join('');
+  const configVal = JSON.stringify(cleanCfg, null, 2);
+
+  container.innerHTML = `<div class="source-form" style="background:#0f0f0f;padding:12px;border-radius:8px;border:1px solid #2a2a2a;">
+    <div class="form-row"><label>${t('sourceName')}</label><input id="inline_sf_name" value="${s.name}" placeholder="e.g. AI Twitter Feed"></div>
+    <div class="form-row"><label>${t('sourceType')}</label><select id="inline_sf_type">${typeOptions}</select></div>
+    <div class="form-row">
+      <label>${lang==='zh' ? '分组' : 'Group'}</label>
+      <select id="inline_sf_group">${groupsHtml}</select>
+    </div>
+    <div class="form-row">
+      <label>${lang==='zh' ? '采集周期' : 'Ingestion Types'}</label>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#aaa;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="inline_sf_dt_4h" ${digestTypes.includes('4h') ? 'checked' : ''}> 4h</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="inline_sf_dt_daily" ${digestTypes.includes('daily') ? 'checked' : ''}> daily</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="inline_sf_dt_weekly" ${digestTypes.includes('weekly') ? 'checked' : ''}> weekly</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="inline_sf_dt_monthly" ${digestTypes.includes('monthly') ? 'checked' : ''}> monthly</label>
+      </div>
+    </div>
+    <div class="form-row"><label>${t('sourceConfig')}</label><textarea id="inline_sf_config" style="font-family:monospace;font-size:12px;min-height:100px;">${configVal}</textarea></div>
+    <div class="form-row" style="flex-direction:row;align-items:center;gap:10px;"><label style="cursor:pointer;display:flex;align-items:center;gap:6px;margin:0;"><input type="checkbox" id="inline_sf_public" style="width:16px;height:16px;" ${s.is_public ? 'checked' : ''}> ${t('sourcePublic')}</label></div>
+    <div class="form-actions">
+      <button class="primary" onclick="saveSourceInline(${sourceId})">${t('save')}</button>
+      <button onclick="cancelInlineEdit()">${t('cancel')}</button>
+    </div>
+  </div>`;
+}
+
+async function saveSourceInline(sourceId) {
+  const name = document.getElementById('inline_sf_name').value.trim();
+  const type = document.getElementById('inline_sf_type').value;
+  const groupId = document.getElementById('inline_sf_group').value;
+  const configText = document.getElementById('inline_sf_config').value.trim();
+  const isPublic = document.getElementById('inline_sf_public').checked;
+  const digestTypes = ['4h', 'daily', 'weekly', 'monthly'].filter(dt => document.getElementById(`inline_sf_dt_${dt === '4h' ? '4h' : dt}`)?.checked);
+
+  if (!name) return;
+  if (!digestTypes.length) {
+    showToast(lang === 'zh' ? '请至少选择一个采集周期' : 'Select at least one ingestion type');
+    return;
+  }
+
+  let cfgObj;
+  try { cfgObj = JSON.parse(configText); } catch { showToast('Invalid JSON config'); return; }
+  if (!cfgObj || typeof cfgObj !== 'object' || Array.isArray(cfgObj)) cfgObj = {};
+
+  const prevCfg = parseSourceConfigObj(editingSource?.config);
+  if (prevCfg._configId && !cfgObj._configId) cfgObj._configId = prevCfg._configId;
+  cfgObj._digestTypes = digestTypes;
+  const config = JSON.stringify(cfgObj);
+
+  try {
+    const payload = { name, type, config, isPublic };
+    if (groupId) payload.groupId = parseInt(groupId);
+
+    await apiFetchJson(`${API}/sources/${sourceId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload)
+    });
+    showToast(t('sourceUpdated'));
+    editingSource = null;
+    renderSources();
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+function cancelInlineEdit() {
+  editingSource = null;
+  renderSources();
 }
 
 const SOURCE_EXAMPLES = {
