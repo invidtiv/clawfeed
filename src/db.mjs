@@ -293,7 +293,7 @@ export function countDigestsByUser(db, userId, { type } = {}) {
 // ── Sources ──
 
 export function listSources(db, { activeOnly, userId, includePublic } = {}) {
-  let sql = 'SELECT sources.*, users.name as creator_name FROM sources LEFT JOIN users ON sources.created_by = users.id';
+  let sql = 'SELECT sources.*, users.name as creator_name, source_groups.name as group_name FROM sources LEFT JOIN users ON sources.created_by = users.id LEFT JOIN source_groups ON sources.group_id = source_groups.id';
   const conditions = ['sources.is_deleted = 0'];
   const params = [];
   if (activeOnly) { conditions.push('is_active = 1'); }
@@ -312,7 +312,7 @@ export function listSources(db, { activeOnly, userId, includePublic } = {}) {
 }
 
 export function getSource(db, id) {
-  return db.prepare('SELECT * FROM sources WHERE id = ?').get(id);
+  return db.prepare('SELECT sources.*, source_groups.name as group_name FROM sources LEFT JOIN source_groups ON sources.group_id = source_groups.id WHERE sources.id = ?').get(id);
 }
 
 export function createSource(db, { name, type, config = '{}', isPublic = 0, createdBy }) {

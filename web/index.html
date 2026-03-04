@@ -1024,7 +1024,7 @@ function renderSourceCard(s, opts = {}) {
     <div class="source-header">
       <span class="source-name" style="font-size:14px;">${icon} ${s.name}${s.is_public ? ' <span style="font-size:11px;color:#666;font-weight:400;">🌐</span>' : ''}
         <span style="font-size:11px;color:#6cf;background:#1a1a2e;padding:1px 6px;border-radius:3px;margin-left:4px;">${s.type}</span>
-        ${s.group_id ? ' <span style="font-size:11px;color:#8f8;background:#1a2e1a;padding:1px 6px;border-radius:3px;margin-left:4px;">🏷️ Group</span>' : ''}
+        ${s.group_name ? ` <span style="font-size:11px;color:#8f8;background:#1a2e1a;padding:1px 6px;border-radius:3px;margin-left:4px;" title="Group: ${s.group_name}">🏷️ ${s.group_name}</span>` : ''}
       </span>
       <div class="source-actions" style="gap:6px;">
         ${showToggle ? `<label class="toggle-switch" title="Active"><input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleSource(${s.id}, this.checked)"><span class="toggle-slider"></span></label>` : ''}
