@@ -312,6 +312,107 @@ def load_groups_from_db():
         conn.close()
 
 
+DEDUP_WINDOW_HOURS = {
+    '4h': 8, '4h-tech': 8, '4h-status': 8, '4h-pt': 8,
+    'daily': 26, 'weekly': 192, 'monthly': 768,
+}
+
+
+def _extract_item_url(item_str):
+    """Extract the URL from a '• Source: Title (URL)' item string."""
+    m = re.search(r'\(([^)]+)\)\s*$', item_str)
+    if m:
+        u = m.group(1).strip()
+        if u.startswith('http'):
+            return u
+    return ""
+
+
+def _ensure_digest_items_table(conn):
+    """Create digest_items table if migration 013 hasn't run via Node yet."""
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS digest_items (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            digest_id  INTEGER NOT NULL,
+            group_id   INTEGER,
+            item_url   TEXT    NOT NULL,
+            item_title TEXT,
+            created_at TEXT    DEFAULT (datetime('now'))
+        )
+    """)
+    try:
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_digest_items_group_time ON digest_items (group_id, created_at)")
+    except Exception:
+        pass
+    conn.commit()
+
+
+def load_seen_items(group_id, digest_type):
+    """Return (seen_url_set, recent_titles_text) for deduplication."""
+    if not DB_PATH.exists():
+        return set(), ""
+    hours = DEDUP_WINDOW_HOURS.get(digest_type, 26)
+    conn = sqlite3.connect(str(DB_PATH))
+    try:
+        _ensure_digest_items_table(conn)
+        rows = conn.execute(
+            """
+            SELECT item_url, item_title
+            FROM digest_items
+            WHERE group_id IS ?
+              AND created_at >= datetime('now', ? || ' hours')
+            ORDER BY created_at DESC
+            LIMIT 200
+            """,
+            (group_id, f'-{hours}')
+        ).fetchall()
+    except Exception as e:
+        print(f"⚠️ Could not load seen items: {e}")
+        return set(), ""
+    finally:
+        conn.close()
+
+    seen_urls = set()
+    titles = []
+    for url, title in rows:
+        seen_urls.add(canonical_url(url))
+        if title:
+            titles.append(f"- {title}")
+
+    recent_text = ""
+    if titles:
+        recent_text = f"RECENTLY COVERED (last {hours}h) — skip unless there are significant new developments:\n" + "\n".join(titles[:60])
+    return seen_urls, recent_text
+
+
+def save_digest_items(digest_id, group_id, items):
+    """Persist item URLs and titles to digest_items for future dedup."""
+    if not DB_PATH.exists():
+        return
+    conn = sqlite3.connect(str(DB_PATH))
+    try:
+        _ensure_digest_items_table(conn)
+        rows = []
+        for item in items:
+            url = _extract_item_url(item)
+            if not url:
+                continue
+            # Extract title: text between "• Source: " and " (URL)"
+            title_m = re.match(r'^•\s*[^:]+:\s*(.*?)\s*\([^)]+\)\s*$', item)
+            title = title_m.group(1).strip()[:300] if title_m else ""
+            rows.append((digest_id, group_id, url, title))
+        if rows:
+            conn.executemany(
+                "INSERT INTO digest_items (digest_id, group_id, item_url, item_title) VALUES (?,?,?,?)",
+                rows
+            )
+            conn.commit()
+    except Exception as e:
+        print(f"⚠️ Could not save digest items: {e}")
+    finally:
+        conn.close()
+
+
 def load_sources_from_config():
     config_path = ROOT / "config.json"
     if not config_path.exists():
@@ -535,7 +636,7 @@ def load_prompt_for_group(group_name):
     return None
 
 
-def generate_with_gemini(content, group_name=None, group_tz='Europe/Lisbon'):
+def generate_with_gemini(content, group_name=None, group_tz='Europe/Lisbon', recent_context=None):
     """Generate digest using Gemini API"""
     global LAST_GEMINI_ERROR
     LAST_GEMINI_ERROR = ""
@@ -547,19 +648,22 @@ def generate_with_gemini(content, group_name=None, group_tz='Europe/Lisbon'):
     # Try to load group-specific prompt
     group_prompt = load_prompt_for_group(group_name)
     
+    recent_block = f"\n\n{recent_context}" if recent_context else ""
+
     if group_prompt:
         # Use group-specific prompt template
         highlights_target = max(12, min(32, len(content) // 8))
         current_time = datetime.now().strftime('%A, %B %d, %Y')
         prompt = group_prompt.replace('{{date}}', current_time).replace('{{timezone}}', group_tz).replace('{{highlights_count}}', str(highlights_target))
-        prompt += f"\n\nSOURCES:\n{chr(10).join(content)}"
+        prompt = prompt.replace('{{recent_context}}', recent_context or '')
+        prompt += f"{recent_block}\n\nSOURCES:\n{chr(10).join(content)}"
     else:
         # Default tech-focused prompt
         highlights_target = max(12, min(32, len(content) // 8))
         prompt = f"""You are a tech news curator. Create a structured daily digest from the following sources.
 Focus on AI research, prompt engineering, LLM management, hardware (ESP32), and modern dev stacks (Vercel/Supabase).
 Ensure broad source coverage; do not over-focus on a single outlet.
-
+{recent_block}
 FORMAT:
 ☀️ ClawFeed | {datetime.now().strftime('%A, %B %d, %Y')} {group_tz}
 
@@ -711,9 +815,22 @@ def generate_digest_for_group(group_id, group_info, sources_in_group, digest_typ
         print(f"⚠️ No content fetched for group '{group_name}'. Skipping digest generation.")
         return None
 
+    # Deduplication: filter items seen in recent digests for this group
+    seen_urls, recent_context = load_seen_items(group_id, digest_type)
+    if seen_urls:
+        filtered = [i for i in all_content if canonical_url(_extract_item_url(i)) not in seen_urls]
+        skipped_count = len(all_content) - len(filtered)
+        if skipped_count:
+            print(f"🔁 Dedup: {skipped_count}/{len(all_content)} items already seen — filtered out")
+        all_content = filtered if filtered else all_content  # never leave empty
+
+    if not all_content:
+        print(f"⚠️ All items already covered in recent digest for '{group_name}'. Skipping.")
+        return None
+
     # Try Gemini summarization
     print("🤖 Attempting Gemini summarization...")
-    digest = generate_with_gemini(all_content, group_name=group_name, group_tz=group_tz)
+    digest = generate_with_gemini(all_content, group_name=group_name, group_tz=group_tz, recent_context=recent_context or None)
     generated_by = 'gemini' if digest else 'fallback'
 
     if not digest:
@@ -754,6 +871,7 @@ Note: Gemini summarization unavailable — showing aggregated feeds with basic f
     if digest_id:
         print(f"✅ Digest created! ID: {digest_id}")
         print(f"📖 View: http://127.0.0.1:8767/#digest-{digest_id}")
+        save_digest_items(digest_id, group_id, all_content)
         if POST_TELEGRAM:
             post_group_digest_to_telegram(digest_id, group_info)
         return digest_id

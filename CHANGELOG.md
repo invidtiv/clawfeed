@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.9.2 — 2026-03-05
+### ✨ New
+- **Digest deduplication** — Two-layer system prevents repeating the same stories across consecutive digests:
+  - **URL-level filter (pre-AI)**: Items already included in a recent digest for the same group are removed before the AI prompt is built. Windows: 4h→8h, daily→26h, weekly→8d, monthly→32d
+  - **Semantic context (in-AI)**: Recent item titles are injected into the prompt as a "RECENTLY COVERED" block, instructing the AI to skip overlapping stories or mark genuine follow-ups as `🔄 Update:`
+- **`digest_items` table** — New DB table tracks every feed item URL and title per digest, keyed by `group_id` and timestamp
+- **Timezone display fix** — Digest card timestamps now shown in the `global_timezone` from settings (default `Europe/Lisbon`) instead of hardcoded SGT (+08:00)
+  - `parseCreatedAt` treats DB timestamps as UTC (`Z`) instead of Singapore time
+  - `appTimezone` loaded from `GET /api/settings` at page startup before first render
+  - Card times use `toLocaleTimeString` with correct `timeZone` option; "SGT" label removed
+
+### 🔧 Database
+- **Migration 013** — New `digest_items (id, digest_id, group_id, item_url, item_title, created_at)` table with index on `(group_id, created_at)` for fast recent-item lookups
+- Python script self-creates `digest_items` table if migration 013 hasn't run via Node yet
+
+### 🔧 Internal
+- `generate-digest.py`: added `load_seen_items()`, `save_digest_items()`, `_extract_item_url()`, `_ensure_digest_items_table()`, `DEDUP_WINDOW_HOURS` dict
+- `templates/digest-prompt.md`: added `{{recent_context}}` placeholder and dedup instructions
+- `web/index.html`: `appTimezone` global; startup settings fetch; UTC parsing in `parseCreatedAt`; timezone-aware weekday/date display
+
+---
+
 ## v0.9.1 — 2026-03-05
 ### ✨ New
 - **Autonomous Telegram posting** — Digests are posted directly to Telegram immediately after generation, with no manual step required

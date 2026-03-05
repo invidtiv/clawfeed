@@ -138,6 +138,18 @@ export function getDb(dbPath) {
     if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) console.error('Migration 012:', e.message);
   }
 
+  // Migration 013: digest_items table for deduplication
+  try {
+    const sql13 = readFileSync(join(ROOT, 'migrations', '013_digest_items.sql'), 'utf8');
+    for (const stmt of sql13.split(';').filter(s => s.trim())) {
+      try { _db.exec(stmt + ';'); } catch (e) {
+        if (!e.message.includes('already exists')) throw e;
+      }
+    }
+  } catch (e) {
+    if (!e.message.includes('already exists')) console.error('Migration 013:', e.message);
+  }
+
   // Backfill slugs for existing users
   _backfillSlugs(_db);
   return _db;

@@ -479,6 +479,7 @@ unique sources << 1M（热门源大量重叠）
 - **v0.1–v0.5** — 基础 Digest 浏览、SQLite 存储、i18n、Google OAuth、Sources CRUD、Source Packs 分享、JSON/RSS Feed、Mark 收藏
 - **v0.9.0** — Source Groups（按组生成独立 Digest），Settings 表，自定义 Digest 类型
 - **v0.9.1** — **Telegram 自动推送** ✅ — 每个 Group 配置 `telegram_thread_id`，生成 Digest 后立即推送到对应 Telegram 话题；内置 Node.js 调度器（60s 轮询）按 Group 的 `schedule` 自动触发，无需外部 cron；`generate-digest.py` 新增 `--post-telegram` 和 `--group-id=N` 标志；systemd user service 管理 Node 服务器
+- **v0.9.2** — **去重系统** ✅ — 双层去重：URL 级（pre-AI 过滤 `digest_items` 已见条目）+ 语义级（向 AI 注入"RECENTLY COVERED"标题列表，指导跳过或标注 `🔄 Update:`）；时区显示修复（timestamps 改为 UTC 解析，按 `global_timezone` 展示，移除硬编码 SGT）
 
 ### 近期 🔨
 

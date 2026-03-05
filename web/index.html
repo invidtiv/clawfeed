@@ -618,6 +618,7 @@ async function doLogout() {
 }
 
 function WEEKDAYS() { return t('weekdays'); }
+let appTimezone = 'UTC';
 let currentType = '4h';
 let markedUrls = new Map(); // url → mark id
 const PAGE_SIZE = 10;
@@ -635,13 +636,13 @@ function parseCreatedAt(d) {
   }
   // Handle month format: "2026-02"
   if (/^\d{4}-\d{2}$/.test(ca)) {
-    return new Date(ca + '-01T00:00:00+08:00');
+    return new Date(ca + '-01T00:00:00Z');
   }
   // Handle year format: "2026"
   if (/^\d{4}$/.test(ca)) {
-    return new Date(ca + '-01-01T00:00:00+08:00');
+    return new Date(ca + '-01-01T00:00:00Z');
   }
-  return new Date(ca.replace(' ', 'T') + (ca.includes('+') ? '' : '+08:00'));
+  return new Date(ca.replace(' ', 'T') + (ca.includes('+') ? '' : 'Z'));
 }
 
 function getWeekKey(dt) {
@@ -676,8 +677,11 @@ function groupDigests(digests) {
 
 function formatGroupLabel(type, key) {
   if (type === '4h') {
-    const d = new Date(key + 'T00:00:00+08:00');
-    const wd = WEEKDAYS()[d.getDay()];
+    const d = new Date(key + 'T12:00:00Z');
+    const wdIdx = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(
+      new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: appTimezone }).format(d)
+    );
+    const wd = WEEKDAYS()[wdIdx >= 0 ? wdIdx : d.getDay()];
     const today = new Date(); today.setHours(0,0,0,0);
     const diff = Math.round((today - new Date(d.toDateString())) / 86400000);
     if (diff === 0) return `📅 ${t('today')} · ${key} ${wd}`;
@@ -770,13 +774,14 @@ async function renderList(append = false) {
       html += `<div class="date-group"><div class="date-group-header">${label} <span class="count">${items.length} ${t('articles')}</span></div><div class="date-group-items">`;
       for (const d of items) {
         const dt = d._dt;
-        const time = dt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const time = dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: appTimezone });
         let title, badge;
         if (currentType === '4h') {
-          title = `${time} SGT`; badge = `<span class="time-badge">${time}</span>`;
+          title = time; badge = `<span class="time-badge">${time}</span>`;
         } else if (currentType === 'daily') {
-          const dateStr = dt.toISOString().slice(0, 10);
-          const wd = WEEKDAYS()[dt.getDay()];
+          const dateStr = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: appTimezone }).format(dt);
+          const wdIdx2 = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: appTimezone }).format(dt));
+          const wd = WEEKDAYS()[wdIdx2 >= 0 ? wdIdx2 : dt.getDay()];
           title = `${dateStr} ${wd}`; badge = '';
         } else if (currentType === 'weekly') {
           const wk = getWeekKey(dt);
@@ -2399,14 +2404,18 @@ applyLang();
 
 // Detect /pack/:slug URL
 const packPageMatch = location.pathname.match(/\/pack\/([a-z0-9_-]+)/);
-checkAuth().then(() => {
-  if (packPageMatch) {
-    renderPackDetailPage(packPageMatch[1]);
-  } else if (currentPackSlug) {
-    renderPackDetailPage(currentPackSlug);
-  } else {
-    renderList();
-  }
+fetch(`${API}/settings`).then(r => r.json()).then(s => {
+  if (s.global_timezone) appTimezone = s.global_timezone;
+}).catch(() => {}).finally(() => {
+  checkAuth().then(() => {
+    if (packPageMatch) {
+      renderPackDetailPage(packPageMatch[1]);
+    } else if (currentPackSlug) {
+      renderPackDetailPage(currentPackSlug);
+    } else {
+      renderList();
+    }
+  });
 });
 
 // ClawMark — only on staging
