@@ -625,10 +625,24 @@ def annotate_source_items(source_name, items):
     return annotated
 
 def load_prompt_for_group(group_name):
-    """Load group-specific prompt template if available."""
+    """Load group-specific prompt template. Checks DB first, then files, then returns None for default."""
     if not group_name:
         return None
-    # Normalize group name for filename - handle emoji first, then lowercase
+    # 1. Check database for prompt assigned via prompt_id
+    if DB_PATH.exists():
+        try:
+            conn = sqlite3.connect(str(DB_PATH))
+            row = conn.execute(
+                'SELECT dp.content FROM digest_prompts dp '
+                'JOIN source_groups sg ON sg.prompt_id = dp.id '
+                'WHERE sg.name = ?', (group_name,)
+            ).fetchone()
+            conn.close()
+            if row:
+                return row[0]
+        except Exception as e:
+            print(f"⚠️ DB prompt lookup failed: {e}")
+    # 2. Fallback to file-based lookup
     normalized = group_name.replace('🎶', '').strip().lower().replace(' ', '-')
     prompt_path = TEMPLATES_DIR / 'prompts' / f'{normalized}.md'
     if prompt_path.exists():

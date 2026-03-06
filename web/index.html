@@ -5,192 +5,276 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ClawFeed</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☀️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* ── Arctic Theme: CSS Custom Properties ── */
+  :root {
+    --arctic-bg: #0a1628;
+    --arctic-bg-elevated: #0f1d32;
+    --arctic-card: rgba(15, 29, 50, 0.7);
+    --arctic-card-hover: rgba(20, 38, 65, 0.8);
+    --arctic-border: rgba(56, 189, 248, 0.12);
+    --arctic-border-hover: rgba(56, 189, 248, 0.25);
+    --arctic-text: #e0eaf5;
+    --arctic-text-secondary: #8ba3c4;
+    --arctic-text-muted: #5a7a9e;
+    --arctic-accent: #38bdf8;
+    --arctic-accent-dim: rgba(56, 189, 248, 0.15);
+    --arctic-frost: #67e8f9;
+    --arctic-aurora-green: #34d399;
+    --arctic-aurora-green-dim: rgba(52, 211, 153, 0.15);
+    --arctic-aurora-amber: #fbbf24;
+    --arctic-aurora-amber-dim: rgba(251, 191, 36, 0.15);
+    --arctic-aurora-red: #f87171;
+    --arctic-aurora-red-dim: rgba(248, 113, 113, 0.12);
+    --arctic-surface: rgba(56, 189, 248, 0.06);
+    --arctic-input-bg: rgba(10, 22, 40, 0.8);
+    --arctic-glow: 0 0 20px rgba(56, 189, 248, 0.08);
+    --arctic-radius: 12px;
+    --arctic-radius-sm: 8px;
+    --arctic-radius-xs: 6px;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { overflow-x: hidden; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; word-break: break-word; transition: background .3s, color .3s; }
-  body.light { background: #f5f5f5; color: #1a1a1a; }
-  body.light .subtitle { color: #888; }
-  body.light .tab { background: #e8e8e8; border-color: #ccc; color: #666; }
-  body.light .tab:hover { border-color: #999; color: #333; }
-  body.light .tab.active { background: #ddd; border-color: #999; color: #111; }
-  body.light .digest-card { background: #fff; border-color: #ddd; }
-  body.light .digest-card:hover { background: #fafafa; border-color: #bbb; }
-  body.light .digest-card .excerpt { color: #888; }
-  body.light .digest-card .time-badge { background: #f0f0f0; border-color: #ddd; color: #666; }
-  body.light .date-group-header { color: #888; border-color: #e0e0e0; }
-  body.light .date-group-header .count { color: #aaa; }
-  body.light .digest-viewer { background: #fff; border-color: #ddd; color: #333; }
-  body.light .back-btn { background: #e8e8e8; border-color: #ccc; color: #666; }
-  body.light .back-btn:hover { color: #111; border-color: #999; }
-  body.light .login-banner { background: #fff; border-color: #ddd; color: #666; }
-  body.light .mark-card { background: #fff; border-color: #ddd; }
-  body.light .mark-card:hover { background: #fafafa; border-color: #bbb; }
-  body.light .source-card { background: #fff; border-color: #ddd; }
-  body.light .source-card:hover { background: #fafafa; border-color: #bbb; }
-  body.light .source-form { background: #fff; border-color: #ddd; }
-  body.light .source-form input, body.light .source-form select, body.light .source-form textarea { background: #f5f5f5; border-color: #ccc; color: #333; }
-  body.light .auth-btn { background: #e8e8e8; border-color: #ccc; color: #555; }
-  body.light .auth-btn:hover { border-color: #999; color: #111; }
-  body.light .mark-stat { background: #fff; border-color: #ddd; }
-  body.light .toast { background: #333; }
-  body.light .changelog-overlay { background: rgba(255,255,255,0.92); }
-  body.light .changelog-inner { color: #333; }
-  body.light .changelog-inner h1 { color: #111; }
-  body.light .changelog-inner h2 { color: #0066cc; border-color: #ddd; }
-  body.light .changelog-inner h3 { color: #444; }
-  body.light .changelog-inner li { color: #555; }
-  body.light .changelog-inner code { background: #e8f0fe; color: #0066cc; }
-  body.light .user-dropdown { background: #fff; border-color: #ddd; box-shadow: 0 4px 12px rgba(0,0,0,.1); }
-  body.light .user-dropdown a { color: #555; }
-  body.light .user-dropdown a:hover { background: #f0f0f0; color: #111; }
-  body.light .pack-card { background: #fff; border-color: #ddd; }
-  body.light .empty { color: #999; }
-  .theme-toggle { background: none; border: 1px solid #333; border-radius: 6px; cursor: pointer; font-size: 16px; padding: 4px 8px; line-height: 1; transition: all .2s; color: #888; }
-  .theme-toggle:hover { border-color: #555; color: #ccc; }
-  body.light .theme-toggle { border-color: #ccc; color: #666; }
-  body.light .theme-toggle:hover { border-color: #999; color: #333; }
-  .container { max-width: 900px; margin: 0 auto; padding: 20px; }
-  h1 { font-size: 1.8em; margin-bottom: 8px; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--arctic-bg); color: var(--arctic-text); word-break: break-word; transition: background .3s, color .3s; }
+  body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: 400px; background: radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+
+  /* ── Light mode overrides ── */
+  body.light { --arctic-bg: #eef4fa; --arctic-bg-elevated: #f5f9fd; --arctic-card: rgba(255,255,255,0.85); --arctic-card-hover: rgba(255,255,255,0.95); --arctic-border: rgba(56, 130, 200, 0.15); --arctic-border-hover: rgba(56, 130, 200, 0.3); --arctic-text: #0f2744; --arctic-text-secondary: #4a6a8a; --arctic-text-muted: #8a9ab0; --arctic-surface: rgba(56, 189, 248, 0.08); --arctic-input-bg: rgba(255,255,255,0.9); --arctic-glow: 0 0 20px rgba(56, 189, 248, 0.06); background: var(--arctic-bg); color: var(--arctic-text); }
+  body.light::before { background: radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 70%); }
+  body.light .toast { background: #1e3a5f; }
+  body.light .changelog-overlay { background: rgba(238,244,250,0.95); }
+  body.light .changelog-inner { color: var(--arctic-text); }
+  body.light .changelog-inner h1 { color: var(--arctic-text); }
+  body.light .changelog-inner h2 { color: var(--arctic-accent); border-color: var(--arctic-border); }
+  body.light .changelog-inner h3 { color: var(--arctic-text-secondary); }
+  body.light .changelog-inner li { color: var(--arctic-text-secondary); }
+  body.light .changelog-inner code { background: var(--arctic-accent-dim); color: #0369a1; }
+
+  /* ── Theme toggle ── */
+  .theme-toggle { background: var(--arctic-surface); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius-xs); cursor: pointer; font-size: 16px; padding: 4px 8px; line-height: 1; transition: all .2s; color: var(--arctic-text-muted); backdrop-filter: blur(8px); }
+  .theme-toggle:hover { border-color: var(--arctic-border-hover); color: var(--arctic-accent); }
+
+  /* ── Container ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
+  h1 { font-size: 1.8em; margin-bottom: 8px; font-weight: 700; letter-spacing: -0.02em; }
   @media (max-width: 480px) { h1 { font-size: 1.3em; } }
-  .subtitle { color: #999; margin-bottom: 24px; font-size: 0.95em; letter-spacing: 0.5px; }
+
+  /* ── Subtitle ── */
+  .subtitle { color: var(--arctic-text-muted); margin-bottom: 24px; font-size: 0.85em; letter-spacing: 0.5px; text-transform: uppercase; }
   .subtitle .agent-name { font-weight: 600; padding: 2px 8px; border-radius: 4px; text-decoration: none; transition: opacity 0.2s; }
   .subtitle .agent-name:hover { opacity: 0.85; }
-  .subtitle .agent-name.zylos { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: #fff; }
-  .subtitle .agent-name.openclaw { background: linear-gradient(135deg, #e67e22, #d35400); color: #fff; }
-  body.light .subtitle .agent-name.zylos { background: linear-gradient(135deg, #a855f7, #7c3aed); }
-  body.light .subtitle .agent-name.openclaw { background: linear-gradient(135deg, #f59e0b, #d97706); }
-  /* Changelog modal */
-  .changelog-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; overflow-y:auto; display:none; }
+  .subtitle .agent-name.zylos { background: linear-gradient(135deg, #818cf8, #6366f1); color: #fff; }
+  .subtitle .agent-name.openclaw { background: linear-gradient(135deg, #fb923c, #f97316); color: #fff; }
+
+  /* ── Changelog modal ── */
+  .changelog-overlay { position:fixed; inset:0; background:rgba(10,22,40,0.92); backdrop-filter:blur(8px); z-index:9999; overflow-y:auto; display:none; }
   .changelog-overlay.open { display:flex; justify-content:center; }
-  .changelog-inner { max-width:750px; width:100%; padding:40px 24px 60px; color:#e0e0e0; position:relative; }
-  .changelog-close { position:fixed; top:16px; right:24px; font-size:28px; color:#888; cursor:pointer; z-index:10000; background:none; border:none; }
-  .changelog-close:hover { color:#fff; }
-  .changelog-inner h1 { font-size:2em; margin-bottom:24px; color:#fff; }
-  .changelog-inner h2 { font-size:1.4em; margin:32px 0 8px; color:#6cf; border-bottom:1px solid #333; padding-bottom:8px; }
-  .changelog-inner h3 { font-size:1.1em; margin:16px 0 8px; color:#ccc; }
+  .changelog-inner { max-width:750px; width:100%; padding:40px 24px 60px; color:var(--arctic-text); position:relative; }
+  .changelog-close { position:fixed; top:16px; right:24px; font-size:28px; color:var(--arctic-text-muted); cursor:pointer; z-index:10000; background:none; border:none; }
+  .changelog-close:hover { color:var(--arctic-accent); }
+  .changelog-inner h1 { font-size:2em; margin-bottom:24px; color:var(--arctic-text); }
+  .changelog-inner h2 { font-size:1.4em; margin:32px 0 8px; color:var(--arctic-accent); border-bottom:1px solid var(--arctic-border); padding-bottom:8px; }
+  .changelog-inner h3 { font-size:1.1em; margin:16px 0 8px; color:var(--arctic-text-secondary); }
   .changelog-inner ul { margin:0 0 8px 20px; }
-  .changelog-inner li { margin:4px 0; line-height:1.6; color:#bbb; }
-  .changelog-inner code { background:#1a1a2e; padding:2px 6px; border-radius:3px; font-size:0.9em; color:#6cf; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .tab { padding: 8px 16px; border-radius: 8px; background: #1a1a1a; border: 1px solid #333; cursor: pointer; color: #aaa; font-size: 14px; transition: all 0.2s; }
-  .tab:hover { border-color: #555; color: #fff; }
-  .tab.active { background: #2a2a2a; border-color: #666; color: #fff; }
-  .digest-list { display: flex; flex-direction: column; gap: 16px; }
-  .date-group { margin-bottom: 4px; }
-  .date-group-header { font-size: 13px; color: #666; font-weight: 600; letter-spacing: 0.5px; padding: 8px 0 6px; border-bottom: 1px solid #1e1e1e; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-  .date-group-header .count { font-size: 11px; color: #444; font-weight: 400; }
+  .changelog-inner li { margin:4px 0; line-height:1.6; color:var(--arctic-text-secondary); }
+  .changelog-inner code { background:var(--arctic-accent-dim); padding:2px 6px; border-radius:3px; font-size:0.9em; color:var(--arctic-accent); }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+  .tab { padding: 8px 16px; border-radius: 20px; background: var(--arctic-surface); border: 1px solid transparent; cursor: pointer; color: var(--arctic-text-muted); font-size: 13px; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+  .tab:hover { color: var(--arctic-text); background: var(--arctic-accent-dim); border-color: var(--arctic-border); }
+  .tab.active { background: var(--arctic-accent-dim); border-color: var(--arctic-accent); color: var(--arctic-accent); box-shadow: 0 0 12px rgba(56, 189, 248, 0.1); }
+
+  /* ── Digest list ── */
+  .digest-list { display: flex; flex-direction: column; gap: 10px; }
+  .date-group { margin-bottom: 8px; }
+  .date-group-header { font-size: 12px; color: var(--arctic-text-muted); font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; padding: 10px 0 8px; border-bottom: 1px solid var(--arctic-border); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .date-group-header .count { font-size: 11px; color: var(--arctic-text-muted); font-weight: 400; opacity: 0.6; }
   .date-group-items { display: flex; flex-direction: column; gap: 8px; }
-  .digest-card { background: #1a1a1a; border: 1px solid #282828; border-radius: 12px; padding: 14px 18px; cursor: pointer; transition: all 0.2s; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-  .digest-card:hover { border-color: #444; background: #1e1e1e; }
+
+  /* ── Digest card ── */
+  .digest-card { background: var(--arctic-card); backdrop-filter: blur(12px); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius); padding: 14px 18px; cursor: pointer; transition: all 0.25s ease; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .digest-card:hover { border-color: var(--arctic-border-hover); background: var(--arctic-card-hover); box-shadow: var(--arctic-glow); transform: translateY(-1px); }
   .digest-card .card-body { flex: 1; min-width: 0; }
   .digest-card .title { font-size: 14px; font-weight: 500; }
-  .digest-card .excerpt { font-size: 12px; color: #666; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; }
-  .digest-card .time-badge { font-size: 12px; color: #666; background: #141414; padding: 3px 10px; border-radius: 6px; border: 1px solid #222; white-space: nowrap; }
-  .digest-viewer { display: none; background: #1a1a1a; border: 1px solid #282828; border-radius: 12px; padding: 24px; margin-top: 16px; line-height: 1.7; white-space: normal; word-break: break-word; overflow-wrap: break-word; font-size: 14px; max-height: 80vh; overflow-y: auto; overflow-x: hidden; }
-  .digest-viewer a { color: #58a6ff; text-decoration: none; }
+  .digest-card .excerpt { font-size: 12px; color: var(--arctic-text-secondary); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6; }
+  .digest-card .time-badge { font-size: 11px; color: var(--arctic-accent); background: var(--arctic-accent-dim); padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(56,189,248,0.1); white-space: nowrap; font-weight: 500; }
+
+  /* ── Digest viewer ── */
+  .digest-viewer { display: none; background: var(--arctic-card); backdrop-filter: blur(12px); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius); padding: 24px; margin-top: 16px; line-height: 1.7; white-space: normal; word-break: break-word; overflow-wrap: break-word; font-size: 14px; max-height: 80vh; overflow-y: auto; overflow-x: hidden; }
+  .digest-viewer a { color: var(--arctic-accent); text-decoration: none; }
   .digest-viewer a:hover { text-decoration: underline; }
-  .digest-viewer h1, .digest-viewer h2, .digest-viewer h3 { color: #f5f5f5; margin: 16px 0 8px; }
+  .digest-viewer h1, .digest-viewer h2, .digest-viewer h3 { color: var(--arctic-text); margin: 16px 0 8px; }
   .digest-viewer p { margin: 0 0 12px; }
   .digest-viewer ul, .digest-viewer ol { margin: 0 0 12px 1.2em; padding-left: 0; }
   .digest-viewer li { margin-bottom: 6px; line-height: 1.6; }
-  .digest-viewer blockquote { border-left: 3px solid #333; margin: 0 0 12px; padding-left: 12px; color: #bbb; }
-  .digest-viewer pre { background: #0f0f0f; border: 1px solid #333; border-radius: 8px; padding: 12px; margin: 0 0 16px; overflow-x: auto; font-size: 13px; }
-  .back-btn { display: inline-block; margin-bottom: 16px; padding: 6px 14px; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; color: #aaa; cursor: pointer; font-size: 13px; }
-  .back-btn:hover { color: #fff; border-color: #666; }
-  .empty { color: #555; text-align: center; padding: 40px; font-size: 14px; }
-  .loading { color: #555; text-align: center; padding: 20px; }
-  .mark-btn { display: inline-block; margin-left: 6px; padding: 1px 8px; font-size: 11px; background: #2a2a2a; border: 1px solid #444; border-radius: 4px; color: #f0b040; cursor: pointer; vertical-align: middle; transition: all .15s; text-decoration: none; }
-  .mark-btn:hover { background: #3a3a1a; border-color: #f0b040; text-decoration: none; }
-  .mark-btn.marked { color: #40c040; border-color: #40c040; cursor: default; }
-  .mark-btn.disabled { color: #555; border-color: #333; cursor: pointer; opacity: .6; }
-  .mark-btn.disabled:hover { background: #2a2a2a; border-color: #555; }
+  .digest-viewer blockquote { border-left: 3px solid var(--arctic-accent); margin: 0 0 12px; padding-left: 12px; color: var(--arctic-text-secondary); }
+  .digest-viewer pre { background: var(--arctic-input-bg); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius-sm); padding: 12px; margin: 0 0 16px; overflow-x: auto; font-size: 13px; }
+
+  /* ── Back button ── */
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px; padding: 6px 14px; background: var(--arctic-surface); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius-xs); color: var(--arctic-text-secondary); cursor: pointer; font-size: 13px; transition: all .2s; }
+  .back-btn:hover { color: var(--arctic-accent); border-color: var(--arctic-border-hover); }
+
+  /* ── Empty / Loading ── */
+  .empty { color: var(--arctic-text-muted); text-align: center; padding: 40px; font-size: 14px; }
+  .loading { color: var(--arctic-text-muted); text-align: center; padding: 20px; }
+
+  /* ── Mark button ── */
+  .mark-btn { display: inline-block; margin-left: 6px; padding: 1px 8px; font-size: 11px; background: var(--arctic-surface); border: 1px solid var(--arctic-border); border-radius: 4px; color: var(--arctic-aurora-amber); cursor: pointer; vertical-align: middle; transition: all .15s; text-decoration: none; }
+  .mark-btn:hover { background: var(--arctic-aurora-amber-dim); border-color: var(--arctic-aurora-amber); text-decoration: none; }
+  .mark-btn.marked { color: var(--arctic-aurora-green); border-color: var(--arctic-aurora-green); cursor: default; }
+  .mark-btn.disabled { color: var(--arctic-text-muted); border-color: var(--arctic-border); cursor: pointer; opacity: .6; }
+  .mark-btn.disabled:hover { background: var(--arctic-surface); border-color: var(--arctic-border-hover); }
+
+  /* ── Login prompt ── */
   .login-prompt { text-align: center; padding: 60px 20px; }
   .login-prompt .icon { font-size: 48px; margin-bottom: 16px; }
-  .login-prompt .msg { color: #888; font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+  .login-prompt .msg { color: var(--arctic-text-secondary); font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
   .login-prompt .auth-btn { display: inline-block; padding: 10px 24px; font-size: 14px; }
-  .login-banner { background: #1a1a1a; border: 1px solid #282828; border-radius: 10px; padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: #999; }
-  .login-banner a { color: #58a6ff; text-decoration: none; }
+
+  /* ── Login banner ── */
+  .login-banner { background: var(--arctic-card); backdrop-filter: blur(12px); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius); padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--arctic-text-secondary); }
+  .login-banner a { color: var(--arctic-accent); text-decoration: none; }
   .login-banner a:hover { text-decoration: underline; }
-  .login-banner .dismiss { cursor: pointer; color: #555; font-size: 16px; padding: 0 4px; line-height: 1; }
-  .login-banner .dismiss:hover { color: #aaa; }
+  .login-banner .dismiss { cursor: pointer; color: var(--arctic-text-muted); font-size: 16px; padding: 0 4px; line-height: 1; }
+  .login-banner .dismiss:hover { color: var(--arctic-text); }
+
+  /* ── Auth bar ── */
   .auth-bar { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-  .auth-tools { display: flex; align-items: center; gap: 6px; padding-left: 8px; border-left: 1px solid #333; margin-left: 2px; }
-  .auth-bar img { width: 32px; height: 32px; border-radius: 50%; }
-  .auth-bar .user-name { font-size: 13px; color: #aaa; }
+  .auth-tools { display: flex; align-items: center; gap: 6px; padding-left: 8px; border-left: 1px solid var(--arctic-border); margin-left: 2px; }
+  .auth-bar img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--arctic-border); }
+  .auth-bar .user-name { font-size: 13px; color: var(--arctic-text-secondary); }
   .user-menu { position: relative; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-  .user-dropdown { display: none; position: absolute; top: 100%; right: 0; margin-top: 6px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 6px 0; min-width: 120px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+  .user-dropdown { display: none; position: absolute; top: 100%; right: 0; margin-top: 6px; background: var(--arctic-bg-elevated); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius-sm); padding: 6px 0; min-width: 120px; z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,.3); backdrop-filter: blur(16px); }
   .user-dropdown.show { display: block; }
-  .user-dropdown a { display: block; padding: 8px 16px; color: #aaa; text-decoration: none; font-size: 13px; transition: all .15s; }
-  .user-dropdown a:hover { background: #2a2a2a; color: #fff; }
-  .auth-btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #444; background: #2a2a2a; color: #ccc; cursor: pointer; font-size: 12px; text-decoration: none; transition: all .2s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-  .auth-btn:hover { border-color: #666; color: #fff; }
+  .user-dropdown a { display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: var(--arctic-text-secondary); text-decoration: none; font-size: 13px; transition: all .15s; }
+  .user-dropdown a:hover { background: var(--arctic-accent-dim); color: var(--arctic-accent); }
+  .auth-btn { padding: 6px 14px; border-radius: var(--arctic-radius-xs); border: 1px solid var(--arctic-border); background: var(--arctic-surface); color: var(--arctic-text-secondary); cursor: pointer; font-size: 12px; text-decoration: none; transition: all .2s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; backdrop-filter: blur(8px); }
+  .auth-btn:hover { border-color: var(--arctic-accent); color: var(--arctic-accent); }
   .auth-btn .g-logo { width:14px;height:14px; }
-  .container { }
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
+
+  /* ── Toast ── */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--arctic-bg-elevated); color: var(--arctic-text); padding: 10px 20px; border-radius: var(--arctic-radius-sm); border: 1px solid var(--arctic-border); font-size: 13px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(0,0,0,.3); }
   .toast.show { opacity: 1; }
-  .mark-card { background: #1a1a1a; border: 1px solid #282828; border-radius: 12px; padding: 16px 20px; transition: all 0.2s; }
-  .mark-card:hover { border-color: #444; background: #1e1e1e; }
+
+  /* ── Mark card ── */
+  .mark-card { background: var(--arctic-card); backdrop-filter: blur(12px); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius); padding: 16px 20px; transition: all 0.25s ease; }
+  .mark-card:hover { border-color: var(--arctic-border-hover); background: var(--arctic-card-hover); box-shadow: var(--arctic-glow); }
   .mark-card .mark-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .mark-card .mark-date { font-size: 12px; color: #666; }
-  .mark-card .mark-status { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
-  .mark-card .mark-status.pending { background: #3a2a00; color: #f0b040; }
-  .mark-card .mark-status.done { background: #0a2a0a; color: #40c040; }
-  .mark-card .mark-author { font-size: 14px; font-weight: 600; color: #58a6ff; }
+  .mark-card .mark-date { font-size: 12px; color: var(--arctic-text-muted); }
+  .mark-card .mark-status { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .mark-card .mark-status.pending { background: var(--arctic-aurora-amber-dim); color: var(--arctic-aurora-amber); }
+  .mark-card .mark-status.done { background: var(--arctic-aurora-green-dim); color: var(--arctic-aurora-green); }
+  .mark-card .mark-author { font-size: 14px; font-weight: 600; color: var(--arctic-accent); }
   .mark-card .mark-link { margin-top: 6px; }
-  .mark-card .mark-link a { font-size: 12px; color: #666; text-decoration: none; word-break: break-all; }
-  .mark-card .mark-link a:hover { color: #58a6ff; text-decoration: underline; }
-  .mark-stats { display: flex; gap: 16px; margin-bottom: 16px; }
-  .mark-stat { background: #1a1a1a; border: 1px solid #282828; border-radius: 8px; padding: 12px 16px; flex: 1; text-align: center; }
-  .mark-stat .num { font-size: 24px; font-weight: 700; }
-  .mark-stat .label { font-size: 12px; color: #888; margin-top: 2px; }
-  .source-card { background: #1a1a1a; border: 1px solid #282828; border-radius: 12px; padding: 16px 20px; transition: all 0.2s; }
-  .source-card:hover { border-color: #444; background: #1e1e1e; }
+  .mark-card .mark-link a { font-size: 12px; color: var(--arctic-text-muted); text-decoration: none; word-break: break-all; }
+  .mark-card .mark-link a:hover { color: var(--arctic-accent); text-decoration: underline; }
+
+  /* ── Mark stats ── */
+  .mark-stats { display: flex; gap: 12px; margin-bottom: 16px; }
+  .mark-stat { background: var(--arctic-card); backdrop-filter: blur(12px); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius); padding: 16px; flex: 1; text-align: center; }
+  .mark-stat .num { font-size: 24px; font-weight: 700; color: var(--arctic-accent); }
+  .mark-stat .label { font-size: 12px; color: var(--arctic-text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── Source card ── */
+  .source-card { background: var(--arctic-card); backdrop-filter: blur(12px); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius); padding: 16px 20px; transition: all 0.25s ease; }
+  .source-card:hover { border-color: var(--arctic-border-hover); background: var(--arctic-card-hover); box-shadow: var(--arctic-glow); }
   .source-card .source-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .source-card .source-name { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .source-card .source-meta { font-size: 12px; color: #666; margin-top: 6px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .source-card .source-name { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .source-card .source-meta { font-size: 12px; color: var(--arctic-text-muted); margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+  /* ── Source actions ── */
   .source-actions { display: flex; gap: 6px; align-items: center; }
-  .source-actions button { padding: 4px 10px; font-size: 12px; background: #2a2a2a; border: 1px solid #444; border-radius: 6px; color: #aaa; cursor: pointer; transition: all .15s; }
-  .source-actions button:hover { border-color: #666; color: #fff; }
-  .source-actions button.danger:hover { border-color: #f04040; color: #f04040; }
+  .source-actions button { padding: 4px 10px; font-size: 12px; background: var(--arctic-surface); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius-xs); color: var(--arctic-text-secondary); cursor: pointer; transition: all .2s; }
+  .source-actions button:hover { border-color: var(--arctic-accent); color: var(--arctic-accent); }
+  .source-actions button.danger:hover { border-color: var(--arctic-aurora-red); color: var(--arctic-aurora-red); }
+
+  /* ── Toggle switch ── */
   .toggle-switch { position: relative; display: inline-block; width: 36px; height: 20px; cursor: pointer; }
   .toggle-switch input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider { position: absolute; inset: 0; background: #333; border-radius: 20px; transition: .3s; }
-  .toggle-slider:before { content: ''; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background: #888; border-radius: 50%; transition: .3s; }
-  .toggle-switch input:checked + .toggle-slider { background: #2a5a2a; }
-  .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); background: #40c040; }
-  .source-form { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .toggle-slider { position: absolute; inset: 0; background: rgba(56,189,248,0.1); border: 1px solid var(--arctic-border); border-radius: 20px; transition: .3s; }
+  .toggle-slider:before { content: ''; position: absolute; height: 14px; width: 14px; left: 2px; bottom: 2px; background: var(--arctic-text-muted); border-radius: 50%; transition: .3s; }
+  .toggle-switch input:checked + .toggle-slider { background: var(--arctic-aurora-green-dim); border-color: rgba(52,211,153,0.3); }
+  .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); background: var(--arctic-aurora-green); }
+
+  /* ── Source form ── */
+  .source-form { background: var(--arctic-card); backdrop-filter: blur(12px); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius); padding: 20px; margin-bottom: 16px; }
   .source-form .form-row { margin-bottom: 12px; }
-  .source-form label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
-  .source-form input, .source-form select, .source-form textarea { width: 100%; padding: 8px 12px; background: #0f0f0f; border: 1px solid #333; border-radius: 6px; color: #e0e0e0; font-size: 13px; font-family: inherit; }
-  .source-form textarea { min-height: 60px; resize: vertical; font-family: monospace; }
+  .source-form label { display: block; font-size: 11px; color: var(--arctic-text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+  .source-form input, .source-form select, .source-form textarea { width: 100%; padding: 8px 12px; background: var(--arctic-input-bg); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius-xs); color: var(--arctic-text); font-size: 13px; font-family: inherit; transition: border-color .2s; }
+  .source-form input:focus, .source-form select:focus, .source-form textarea:focus { outline: none; border-color: var(--arctic-accent); box-shadow: 0 0 0 2px rgba(56,189,248,0.1); }
+  .source-form textarea { min-height: 60px; resize: vertical; font-family: 'Fira Code', monospace; }
   .source-form .form-actions { display: flex; gap: 8px; margin-top: 16px; }
-  .source-form .form-actions button { padding: 8px 20px; border-radius: 6px; border: 1px solid #444; background: #2a2a2a; color: #ccc; cursor: pointer; font-size: 13px; transition: all .2s; }
-  .source-form .form-actions button.primary { background: #1a3a1a; border-color: #40c040; color: #40c040; }
-  .source-form .form-actions button:hover { border-color: #666; color: #fff; }
-  .pack-card { background: #1a1a1a; border: 1px solid #282828; border-radius: 12px; padding: 16px 20px; transition: all 0.2s; }
-  .pack-card:hover { border-color: #444; background: #1e1e1e; }
+  .source-form .form-actions button { padding: 8px 20px; border-radius: var(--arctic-radius-xs); border: 1px solid var(--arctic-border); background: var(--arctic-surface); color: var(--arctic-text-secondary); cursor: pointer; font-size: 13px; transition: all .2s; font-weight: 500; }
+  .source-form .form-actions button.primary { background: var(--arctic-aurora-green-dim); border-color: rgba(52,211,153,0.3); color: var(--arctic-aurora-green); }
+  .source-form .form-actions button.primary:hover { background: rgba(52,211,153,0.25); border-color: var(--arctic-aurora-green); }
+  .source-form .form-actions button:hover { border-color: var(--arctic-border-hover); color: var(--arctic-text); }
+
+  /* ── Pack card ── */
+  .pack-card { background: var(--arctic-card); backdrop-filter: blur(12px); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius); padding: 16px 20px; transition: all 0.25s ease; }
+  .pack-card:hover { border-color: var(--arctic-border-hover); background: var(--arctic-card-hover); box-shadow: var(--arctic-glow); }
   .pack-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
   .pack-name { font-size: 16px; font-weight: 600; }
-  .pack-desc { font-size: 13px; color: #888; margin-top: 4px; }
-  .pack-meta { display: flex; gap: 12px; align-items: center; margin-top: 10px; font-size: 12px; color: #666; flex-wrap: wrap; }
+  .pack-desc { font-size: 13px; color: var(--arctic-text-secondary); margin-top: 4px; }
+  .pack-meta { display: flex; gap: 12px; align-items: center; margin-top: 10px; font-size: 12px; color: var(--arctic-text-muted); flex-wrap: wrap; }
   .pack-meta img { width: 20px; height: 20px; border-radius: 50%; }
   .pack-sources-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .pack-source-tag { font-size: 11px; padding: 3px 8px; background: #141414; border: 1px solid #282828; border-radius: 6px; color: #aaa; }
+  .pack-source-tag { font-size: 11px; padding: 3px 8px; background: var(--arctic-surface); border: 1px solid var(--arctic-border); border-radius: 20px; color: var(--arctic-text-secondary); }
   .pack-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-  .pack-actions button { padding: 6px 16px; font-size: 12px; border-radius: 6px; cursor: pointer; transition: all .2s; }
-  .pack-install-btn { background: #1a3a1a; border: 1px solid #40c040; color: #40c040; }
-  .pack-install-btn:hover { background: #2a4a2a; }
-  .pack-install-btn.done { background: #1a2a1a; border-color: #336633; color: #666; cursor: default; }
-  .pack-delete-btn { background: #2a2a2a; border: 1px solid #444; color: #aaa; }
-  .pack-delete-btn:hover { border-color: #f04040; color: #f04040; }
+  .pack-actions button { padding: 6px 16px; font-size: 12px; border-radius: var(--arctic-radius-xs); cursor: pointer; transition: all .2s; font-weight: 500; }
+  .pack-install-btn { background: var(--arctic-aurora-green-dim); border: 1px solid rgba(52,211,153,0.3); color: var(--arctic-aurora-green); }
+  .pack-install-btn:hover { background: rgba(52,211,153,0.25); border-color: var(--arctic-aurora-green); }
+  .pack-install-btn.done { background: var(--arctic-surface); border-color: var(--arctic-border); color: var(--arctic-text-muted); cursor: default; }
+  .pack-delete-btn { background: var(--arctic-surface); border: 1px solid var(--arctic-border); color: var(--arctic-text-secondary); }
+  .pack-delete-btn:hover { border-color: var(--arctic-aurora-red); color: var(--arctic-aurora-red); }
   .pack-detail-page { max-width: 700px; margin: 0 auto; }
   .pack-detail-sources { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-  .pack-detail-source { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #141414; border: 1px solid #222; border-radius: 8px; }
+  .pack-detail-source { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--arctic-surface); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius-sm); }
   .pack-detail-source .icon { font-size: 18px; }
   .pack-detail-source .info { flex: 1; }
   .pack-detail-source .info .name { font-size: 14px; font-weight: 500; }
-  .pack-detail-source .info .type { font-size: 11px; color: #666; }
+  .pack-detail-source .info .type { font-size: 11px; color: var(--arctic-text-muted); }
+
+  /* ── Schedule hour bar ── */
+  .schedule-bar { display: flex; gap: 1px; margin-top: 8px; background: var(--arctic-surface); border-radius: var(--arctic-radius-sm); padding: 4px; overflow: hidden; }
+  .schedule-bar .hour-slot { flex: 1; min-width: 0; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 3px; font-size: 9px; font-weight: 500; color: var(--arctic-text-muted); transition: all .2s; position: relative; cursor: default; }
+  .schedule-bar .hour-slot.active { background: var(--arctic-aurora-green-dim); color: var(--arctic-aurora-green); }
+  .schedule-bar .hour-slot.active::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--arctic-aurora-green); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 6px rgba(52,211,153,0.4); }
+  .schedule-bar .hour-slot:hover { background: var(--arctic-accent-dim); }
+  .schedule-bar-labels { display: flex; gap: 1px; padding: 0 4px; margin-top: 2px; }
+  .schedule-bar-labels span { flex: 1; min-width: 0; text-align: center; font-size: 8px; color: var(--arctic-text-muted); opacity: 0.5; }
+  .schedule-day-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; background: var(--arctic-accent-dim); color: var(--arctic-accent); margin-top: 6px; }
+
+  /* ── Modal overlay ── */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; animation: modalFadeIn .2s ease; }
+  .modal-content { background: var(--arctic-bg-elevated); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius); padding: 24px; width: 90%; max-width: 520px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(56,189,248,0.08); animation: modalSlideIn .25s ease; }
+  .modal-title { font-size: 16px; font-weight: 600; color: var(--arctic-text); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modalSlideIn { from { opacity: 0; transform: translateY(-12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  /* ── Interactive schedule editor ── */
+  .schedule-editor-label { font-size: 11px; color: var(--arctic-text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 6px; }
+  .schedule-bar-edit { display: flex; gap: 2px; background: var(--arctic-surface); border-radius: var(--arctic-radius-sm); padding: 6px; }
+  .schedule-bar-edit .hour-cell { flex: 1; min-width: 0; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 9px; font-weight: 600; color: var(--arctic-text-muted); cursor: pointer; transition: all .15s; position: relative; user-select: none; }
+  .schedule-bar-edit .hour-cell:hover { background: var(--arctic-accent-dim); color: var(--arctic-accent); }
+  .schedule-bar-edit .hour-cell.active { background: var(--arctic-aurora-green-dim); color: var(--arctic-aurora-green); }
+  .schedule-bar-edit .hour-cell.active::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--arctic-aurora-green); position: absolute; box-shadow: 0 0 8px rgba(52,211,153,0.5); }
+  .schedule-bar-edit .hour-cell.active:hover { background: rgba(248,113,113,0.15); }
+  .schedule-bar-edit .hour-cell.active:hover::after { background: var(--arctic-aurora-red); box-shadow: 0 0 8px rgba(248,113,113,0.5); }
+  .schedule-edit-labels { display: flex; gap: 2px; padding: 0 6px; margin-top: 2px; }
+  .schedule-edit-labels span { flex: 1; min-width: 0; text-align: center; font-size: 9px; color: var(--arctic-text-muted); opacity: 0.6; }
+  .schedule-day-select { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+  .schedule-day-select select { padding: 4px 8px; background: var(--arctic-input-bg); border: 1px solid var(--arctic-border); border-radius: var(--arctic-radius-xs); color: var(--arctic-text); font-size: 12px; font-family: inherit; }
+
+  /* ── Scrollbar styling ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--arctic-border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--arctic-border-hover); }
 </style>
 </head>
 <body>
@@ -204,16 +288,17 @@
     </div>
   </div>
   <p class="subtitle" id="subtitleText">AI NEWS DIGEST — powered by <a href="https://x.com/ZylosAI" target="_blank" rel="noopener" class="agent-name zylos">Jessie@ZylosAI</a>, <a href="https://x.com/OpenClaw" target="_blank" rel="noopener" class="agent-name openclaw">Lisa@OpenClaw</a></p>
-  <p class="info-banner" id="infoBanner" style="color:#e8a838;font-size:0.85em;margin:-16px 0 16px 0;"></p>
+  <p class="info-banner" id="infoBanner" style="color:var(--arctic-aurora-amber);font-size:0.85em;margin:-16px 0 16px 0;"></p>
   <div class="tabs">
-    <div class="tab active" data-type="4h">4H 简报</div>
-    <div class="tab" data-type="daily">日报</div>
-    <div class="tab" data-type="weekly">周报</div>
-    <div class="tab" data-type="monthly">月报</div>
-    <div class="tab" data-type="sources">📡 数据源</div>
-    <div class="tab" data-type="groups">🏷️ 分组</div>
-    <div class="tab" data-type="marks">📌 Mark 收藏</div>
-    <div class="tab" data-type="settings">⚙️ 设置</div>
+    <div class="tab active" data-type="4h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 4H 简报</div>
+    <div class="tab" data-type="daily"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> 日报</div>
+    <div class="tab" data-type="weekly"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> 周报</div>
+    <div class="tab" data-type="monthly"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> 月报</div>
+    <div class="tab" data-type="sources"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/></svg> 数据源</div>
+    <div class="tab" data-type="groups"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> 分组</div>
+    <div class="tab" data-type="prompts"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Prompts</div>
+    <div class="tab" data-type="marks"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Mark 收藏</div>
+    <div class="tab" data-type="settings"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> 设置</div>
   </div>
   <div id="loginBanner" class="login-banner" style="display:none;">
     <span>💡 登录 Google 账号即可收藏文章、管理个人书签</span>
@@ -260,7 +345,7 @@ const I18N = {
   zh: {
     title: '☀️ ClawFeed',
     subtitle: 'AI 新闻简报 — POWERED BY <a href="https://x.com/ZylosAI" target="_blank" rel="noopener" class="agent-name zylos">Jessie@ZylosAI</a>, <a href="https://x.com/OpenClaw" target="_blank" rel="noopener" class="agent-name openclaw">Lisa@OpenClaw</a>',
-    tab4h: '4H 简报', tabDaily: '日报', tabWeekly: '周报', tabMonthly: '月报', tabMarks: '📌 Mark 收藏', tabGroups: '🏷️ 分组', tabSettings: '⚙️ 设置',
+    tab4h: '4H 简报', tabDaily: '日报', tabWeekly: '周报', tabMonthly: '月报', tabMarks: 'Mark 收藏', tabGroups: '分组', tabSettings: '设置',
     loginBanner: '💡 登录 Google 账号即可收藏文章、管理个人书签',
     loginBtn: '登录', logout: '退出', signIn: '登录',
     loading: '加载中...', noData: '暂无数据', loadMore: '加载更多', loadingMore: '加载中...',
@@ -279,7 +364,7 @@ const I18N = {
     marked: '✅ 已 Mark', mark: '📌 Mark',
     items: '条', cannotLoadMarks: '无法加载 Marks 数据',
     weekdays: ['周日','周一','周二','周三','周四','周五','周六'],
-    tabSources: '📡 数据源',
+    tabSources: '数据源',
     sourcesTotal: '总数', sourcesActive: '活跃', sourcesTypes: '类型',
     addSource: '➕ 添加源', editSource: '编辑', deleteSource: '删除',
     sourceName: '名称', sourceType: '类型', sourceConfig: '配置 (JSON)', sourcePublic: '公开',
@@ -316,13 +401,13 @@ const I18N = {
     feedbackTitle: '💬 反馈', feedbackPlaceholder: '说点什么...', feedbackEmailPlaceholder: '邮箱（可选）',
     feedbackSend: '发送', feedbackEmpty: '有什么想说的？我们会认真看每一条反馈 😊',
     feedbackSent: '✅ 已发送', feedbackNamePlaceholder: '名字（可选）',
-    infoBanner: '🔥 感谢大家热情！线上版本今天会快速迭代修掉一些 bug，进 <a href="https://t.me/CocoAIxyz" target="_blank" rel="noopener" style="color:#58a6ff;text-decoration:underline;">TG 交流群</a>保持更新',
-    settingsTitle: '⚙️ 系统设置',
+    infoBanner: '🔥 感谢大家热情！线上版本今天会快速迭代修掉一些 bug，进 <a href="https://t.me/CocoAIxyz" target="_blank" rel="noopener" style="color:var(--arctic-accent);text-decoration:underline;">TG 交流群</a>保持更新',
+    settingsTitle: '系统设置',
     settingsTimezone: '时区',
     settingsLanguage: '语言',
     settingsSave: '保存设置',
     settingsSaved: '✅ 设置已保存',
-    groupsTitle: '🏷️ 数据源分组',
+    groupsTitle: '数据源分组',
     addGroup: '➕ 添加分组',
     groupName: '分组名称',
     groupDesc: '描述',
@@ -335,11 +420,30 @@ const I18N = {
     noGroups: '暂无分组',
     editGroup: '编辑',
     deleteGroup: '删除',
+    groupPrompt: '摘要提示词',
+    tabPrompts: 'Prompts',
+    promptsTitle: '摘要提示词',
+    addPrompt: '+ 新建提示词',
+    editPrompt: '编辑',
+    deletePrompt: '删除',
+    promptName: '提示词名称',
+    promptContent: '提示词内容',
+    promptCreated: '✅ 提示词已创建',
+    promptSaved: '✅ 提示词已保存',
+    promptDeleted: '✅ 提示词已删除',
+    promptDefault: '默认',
+    promptUsedBy: '使用组',
+    noPrompts: '暂无提示词',
+    promptVarsHint: '可用变量: {{date}}, {{timezone}}, {{highlights_count}}, {{recent_context}}',
+    promptCannotDeleteDefault: '不能删除默认提示词',
+    promptCannotDeleteInUse: '此提示词正在使用中，请先取消分配',
+    confirmDeletePrompt: '确定删除此提示词？',
+    promptDefaultInherit: '默认（继承）',
   },
   en: {
     title: '☀️ ClawFeed',
     subtitle: 'AI NEWS DIGEST — POWERED BY <a href="https://x.com/ZylosAI" target="_blank" rel="noopener" class="agent-name zylos">Jessie@ZylosAI</a>, <a href="https://x.com/OpenClaw" target="_blank" rel="noopener" class="agent-name openclaw">Lisa@OpenClaw</a>',
-    tab4h: '4H Briefs', tabDaily: 'Daily', tabWeekly: 'Weekly', tabMonthly: 'Monthly', tabMarks: '📌 Marks', tabGroups: '🏷️ Groups', tabSettings: '⚙️ Settings',
+    tab4h: '4H Briefs', tabDaily: 'Daily', tabWeekly: 'Weekly', tabMonthly: 'Monthly', tabMarks: 'Marks', tabGroups: 'Groups', tabSettings: 'Settings',
     loginBanner: '💡 Sign in with Google to bookmark articles and manage your reading list',
     loginBtn: 'Login', logout: 'Logout', signIn: 'Sign in',
     loading: 'Loading...', noData: 'No data', loadMore: 'Load More', loadingMore: 'Loading...',
@@ -358,7 +462,7 @@ const I18N = {
     marked: '✅ Marked', mark: '📌 Mark',
     items: 'items', cannotLoadMarks: 'Cannot load marks',
     weekdays: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
-    tabSources: '📡 Sources',
+    tabSources: 'Sources',
     sourcesTotal: 'Total', sourcesActive: 'Active', sourcesTypes: 'Types',
     addSource: '➕ Add Source', editSource: 'Edit', deleteSource: 'Delete',
     sourceName: 'Name', sourceType: 'Type', sourceConfig: 'Config (JSON)', sourcePublic: 'Public',
@@ -395,13 +499,13 @@ const I18N = {
     feedbackTitle: '💬 Feedback', feedbackPlaceholder: 'Type your message...', feedbackEmailPlaceholder: 'Email (optional)',
     feedbackSend: 'Send', feedbackEmpty: 'Have something to say? We read every piece of feedback 😊',
     feedbackSent: '✅ Sent', feedbackNamePlaceholder: 'Name (optional)',
-    infoBanner: '🔥 Thanks for the enthusiasm! We\'re shipping bug fixes today — join our <a href="https://t.me/CocoAIxyz" target="_blank" rel="noopener" style="color:#58a6ff;text-decoration:underline;">TG group</a> for updates',
-    settingsTitle: '⚙️ System Settings',
+    infoBanner: '🔥 Thanks for the enthusiasm! We\'re shipping bug fixes today — join our <a href="https://t.me/CocoAIxyz" target="_blank" rel="noopener" style="color:var(--arctic-accent);text-decoration:underline;">TG group</a> for updates',
+    settingsTitle: 'System Settings',
     settingsTimezone: 'Timezone',
     settingsLanguage: 'Language',
     settingsSave: 'Save Settings',
     settingsSaved: '✅ Settings saved',
-    groupsTitle: '🏷️ Source Groups',
+    groupsTitle: 'Source Groups',
     addGroup: '➕ Add Group',
     groupName: 'Group Name',
     groupDesc: 'Description',
@@ -414,6 +518,25 @@ const I18N = {
     noGroups: 'No groups yet',
     editGroup: 'Edit',
     deleteGroup: 'Delete',
+    groupPrompt: 'Digest Prompt',
+    tabPrompts: 'Prompts',
+    promptsTitle: 'Digest Prompts',
+    addPrompt: '+ New Prompt',
+    editPrompt: 'Edit',
+    deletePrompt: 'Delete',
+    promptName: 'Prompt Name',
+    promptContent: 'Prompt Content',
+    promptCreated: '✅ Prompt created',
+    promptSaved: '✅ Prompt saved',
+    promptDeleted: '✅ Prompt deleted',
+    promptDefault: 'Default',
+    promptUsedBy: 'Used by',
+    noPrompts: 'No prompts yet',
+    promptVarsHint: 'Variables: {{date}}, {{timezone}}, {{highlights_count}}, {{recent_context}}',
+    promptCannotDeleteDefault: 'Cannot delete default prompt',
+    promptCannotDeleteInUse: 'This prompt is in use. Unassign it from groups first.',
+    confirmDeletePrompt: 'Delete this prompt?',
+    promptDefaultInherit: 'Default (inherit)',
   }
 };
 
@@ -432,14 +555,16 @@ function applyLang() {
   document.getElementById('subtitleText').innerHTML = t('subtitle');
   const ib = document.getElementById('infoBanner'); if (ib) ib.innerHTML = t('infoBanner');
   const cl = document.getElementById('changelogLink'); if (cl) cl.textContent = t('changelog');
-  document.querySelector('[data-type="4h"]').textContent = t('tab4h');
-  document.querySelector('[data-type="daily"]').textContent = t('tabDaily');
-  document.querySelector('[data-type="weekly"]').textContent = t('tabWeekly');
-  document.querySelector('[data-type="monthly"]').textContent = t('tabMonthly');
-  document.querySelector('[data-type="sources"]').textContent = t('tabSources');
-  document.querySelector('[data-type="groups"]').textContent = t('tabGroups');
-  document.querySelector('[data-type="marks"]').textContent = t('tabMarks');
-  document.querySelector('[data-type="settings"]').textContent = t('tabSettings');
+  // Update tab labels while preserving SVG icons
+  document.querySelectorAll('.tab[data-type]').forEach(tab => {
+    const svg = tab.querySelector('svg');
+    const key = { '4h':'tab4h', daily:'tabDaily', weekly:'tabWeekly', monthly:'tabMonthly', sources:'tabSources', groups:'tabGroups', prompts:'tabPrompts', marks:'tabMarks', settings:'tabSettings' }[tab.dataset.type];
+    if (key) {
+      const label = t(key);
+      if (svg) { tab.textContent = ''; tab.appendChild(svg); tab.append(' ' + label); }
+      else tab.textContent = label;
+    }
+  });
   const banner = document.getElementById('loginBanner');
   if (banner) banner.querySelector('span').textContent = t('loginBanner');
   renderAuthBar();
@@ -555,16 +680,16 @@ async function checkAuth() {
 
 function ghLangHtml() {
   const label = lang === 'zh' ? 'EN' : '中文';
-  return `<span class="auth-tools"><span id="langToggle" style="display:inline-flex;align-items:center;gap:4px;color:#888;cursor:pointer;font-size:12px;padding:3px 8px;border:1px solid #333;border-radius:6px;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='#555';this.style.color='#ccc'" onmouseout="this.style.borderColor='#333';this.style.color='#888'">🌐 ${label}</span></span>`;
+  return `<span class="auth-tools"><span id="langToggle" style="display:inline-flex;align-items:center;gap:4px;color:var(--arctic-text-muted);cursor:pointer;font-size:12px;padding:3px 8px;border:1px solid var(--arctic-border);border-radius:6px;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='var(--arctic-border-hover)';this.style.color='var(--arctic-accent)'" onmouseout="this.style.borderColor='var(--arctic-border)';this.style.color='var(--arctic-text-muted)'">${label}</span></span>`;
 }
 
 function renderAuthBar() {
   const bar = document.getElementById('authBar');
   const ghSvg = `<svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>`;
   const moreMenu = `<div class="user-menu" onclick="document.getElementById('moreDropdown').classList.toggle('show')">
-    <span style="cursor:pointer;font-size:14px;color:#666;transition:color .2s;padding:2px 4px;" onmouseover="this.style.color='#ccc'" onmouseout="this.style.color='#666'">⋯</span>
+    <span style="cursor:pointer;font-size:14px;color:var(--arctic-text-muted);transition:color .2s;padding:2px 4px;" onmouseover="this.style.color='var(--arctic-accent)'" onmouseout="this.style.color='var(--arctic-text-muted)'">⋯</span>
     <div id="moreDropdown" class="user-dropdown">
-      <a href="https://github.com/kevinho/clawfeed" target="_blank" onclick="event.stopPropagation();">${ghSvg} GitHub <span style="color:#555;font-size:12px;">v0.8.1</span></a>
+      <a href="https://github.com/kevinho/clawfeed" target="_blank" onclick="event.stopPropagation();">${ghSvg} GitHub <span style="color:var(--arctic-text-muted);font-size:12px;">v0.8.1</span></a>
       <a href="#" onclick="event.stopPropagation();showChangelog();return false;">📋 ${t('changelog')}</a>
       <a href="#" onclick="event.stopPropagation();showRoadmap();return false;">🗺️ ${t('roadmap')}</a>
     </div>
@@ -748,6 +873,7 @@ async function renderList(append = false) {
   if (currentType === 'marks') { renderMarks(); return; }
   if (currentType === 'sources') { renderSources(); return; }
   if (currentType === 'groups') { renderGroups(); return; }
+  if (currentType === 'prompts') { renderPrompts(); return; }
   if (currentType === 'settings') { renderSettings(); return; }
 
   if (!append) {
@@ -791,13 +917,13 @@ async function renderList(append = false) {
           title = `${parseInt(mon.split('-')[1])} 月`; badge = '';
         }
         const excerpt = extractExcerpt(d.content);
-        const groupBadge = d.group_name ? ` <span style="font-size:11px;color:#8f8;background:#1a2e1a;padding:1px 6px;border-radius:3px;margin-left:4px;" title="Group: ${d.group_name}">🏷️ ${d.group_name}</span>` : '';
+        const groupBadge = d.group_name ? ` <span style="font-size:11px;color:var(--arctic-aurora-green);background:var(--arctic-aurora-green-dim);padding:1px 6px;border-radius:3px;margin-left:4px;" title="Group: ${d.group_name}">🏷️ ${d.group_name}</span>` : '';
         html += `<div class="digest-card" data-id="${d.id}"><div class="card-body"><div class="title">${title}${groupBadge}</div>${excerpt ? `<div class="excerpt">${excerpt}</div>` : ''}</div>${badge}</div>`;
       }
       html += `</div></div>`;
     }
     if (!allLoaded) {
-      html += `<div id="load-more" style="text-align:center;padding:16px;"><button onclick="loadMore()" style="padding:10px 32px;background:#2a2a2a;border:1px solid #444;border-radius:8px;color:#aaa;cursor:pointer;font-size:14px;transition:all .2s;">${t('loadMore')}</button></div>`;
+      html += `<div id="load-more" style="text-align:center;padding:16px;"><button onclick="loadMore()" style="padding:10px 32px;background:var(--arctic-surface);border:1px solid var(--arctic-border);border-radius:8px;color:var(--arctic-text-secondary);cursor:pointer;font-size:14px;transition:all .2s;">${t('loadMore')}</button></div>`;
     }
     list.innerHTML = html;
     list.querySelectorAll('.digest-card').forEach(card => {
@@ -884,7 +1010,7 @@ async function renderMarks() {
     let html = `<div class="mark-stats">
       <div class="mark-stat"><div class="num">${marks.length}</div><div class="label">${t('totalMarks')}</div></div>
       <div class="mark-stat"><div class="num">${processed.length}</div><div class="label">${t('deepDived')}</div></div>
-      <div class="mark-stat"><div class="num" style="color:#f0b040">${pending.length}</div><div class="label">${t('pending')}</div></div>
+      <div class="mark-stat"><div class="num" style="color:var(--arctic-aurora-amber)">${pending.length}</div><div class="label">${t('pending')}</div></div>
     </div>`;
 
     // View toggle
@@ -897,7 +1023,7 @@ async function renderMarks() {
       html += `<div style="text-align:center;padding:50px 20px;">
         <div style="font-size:36px;margin-bottom:12px;">📌</div>
         <div style="font-size:18px;font-weight:600;margin-bottom:10px;">${t('emptyMarksTitle')}</div>
-        <div style="color:#888;font-size:14px;line-height:1.7;white-space:pre-line;">${t('emptyMarksDesc')}</div>
+        <div style="color:var(--arctic-text-muted);font-size:14px;line-height:1.7;white-space:pre-line;">${t('emptyMarksDesc')}</div>
       </div>`;
     } else if (markViewMode === 'topic') {
       // Group by topic
@@ -947,12 +1073,12 @@ function renderMarkCard(m) {
       <span class="mark-author">@${author}</span>
       <span class="mark-status ${isDone ? 'done' : 'pending'}">${isDone ? t('marksDone') : t('marksPending')}</span>
     </div>
-    ${summary ? `<div style="font-size:13px;color:#bbb;margin:6px 0;line-height:1.5;">${summary}</div>` : ''}
+    ${summary ? `<div style="font-size:13px;color:var(--arctic-text-secondary);margin:6px 0;line-height:1.5;">${summary}</div>` : ''}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
-      <a href="${m.url}" target="_blank" style="font-size:12px;color:#555;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%;">${m.url.replace('https://x.com/','x.com/')}</a>
+      <a href="${m.url}" target="_blank" style="font-size:12px;color:var(--arctic-text-muted);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%;">${m.url.replace('https://x.com/','x.com/')}</a>
       <div style="display:flex;gap:6px;align-items:center;">
-        <span style="font-size:11px;color:#555;background:#1a1a1a;padding:1px 6px;border-radius:3px;border:1px solid #282828;">${topic}</span>
-        <span class="mark-btn" onclick="doUnmark('${m.url}', ${m.id}, this)" style="font-size:11px;color:#e55;border-color:#e55;">✕</span>
+        <span style="font-size:11px;color:var(--arctic-text-muted);background:var(--arctic-bg-elevated);padding:1px 6px;border-radius:3px;border:1px solid var(--arctic-border);">${topic}</span>
+        <span class="mark-btn" onclick="doUnmark('${m.url}', ${m.id}, this)" style="font-size:11px;color:var(--arctic-aurora-red);border-color:var(--arctic-aurora-red);">✕</span>
       </div>
     </div>
   </div>`;
@@ -996,9 +1122,9 @@ function renderDigestTypeButtons(sourceId, digestTypes) {
   const all = ['4h', 'daily', 'weekly', 'monthly'];
   return all.map(dt => {
     const active = digestTypes.includes(dt);
-    const bg = active ? '#1f3a22' : '#1a1a1a';
-    const border = active ? '#40c040' : '#2c2c2c';
-    const color = active ? '#7be27b' : '#888';
+    const bg = active ? 'var(--arctic-aurora-green-dim)' : 'var(--arctic-surface)';
+    const border = active ? 'rgba(52,211,153,0.3)' : 'var(--arctic-border)';
+    const color = active ? 'var(--arctic-aurora-green)' : 'var(--arctic-text-muted)';
     return `<button onclick="toggleSourceDigestType(${sourceId}, '${dt}')" style="padding:2px 7px;font-size:11px;background:${bg};border:1px solid ${border};border-radius:6px;color:${color};cursor:pointer;">${dt}</button>`;
   }).join('');
 }
@@ -1028,9 +1154,9 @@ function renderSourceCard(s, opts = {}) {
 
   return `<div class="source-card" id="source-card-${s.id}" style="padding:12px 16px;">
     <div class="source-header">
-      <span class="source-name" style="font-size:14px;">${icon} ${s.name}${s.is_public ? ' <span style="font-size:11px;color:#666;font-weight:400;">🌐</span>' : ''}
-        <span style="font-size:11px;color:#6cf;background:#1a1a2e;padding:1px 6px;border-radius:3px;margin-left:4px;">${s.type}</span>
-        ${s.group_name ? ` <span style="font-size:11px;color:#8f8;background:#1a2e1a;padding:1px 6px;border-radius:3px;margin-left:4px;" title="Group: ${s.group_name}">🏷️ ${s.group_name}</span>` : ''}
+      <span class="source-name" style="font-size:14px;">${icon} ${s.name}${s.is_public ? ' <span style="font-size:11px;color:var(--arctic-text-muted);font-weight:400;">🌐</span>' : ''}
+        <span style="font-size:11px;color:var(--arctic-accent);background:var(--arctic-accent-dim);padding:1px 6px;border-radius:3px;margin-left:4px;">${s.type}</span>
+        ${s.group_name ? ` <span style="font-size:11px;color:var(--arctic-aurora-green);background:var(--arctic-aurora-green-dim);padding:1px 6px;border-radius:3px;margin-left:4px;" title="Group: ${s.group_name}">🏷️ ${s.group_name}</span>` : ''}
       </span>
       <div class="source-actions" style="gap:6px;">
         ${showToggle ? `<label class="toggle-switch" title="Active"><input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleSource(${s.id}, this.checked)"><span class="toggle-slider"></span></label>` : ''}
@@ -1041,7 +1167,7 @@ function renderSourceCard(s, opts = {}) {
     </div>
     <div class="source-meta" style="font-size:11px;">
       <span>${t('lastFetched')}: ${lastFetch}</span>
-      ${target ? `<span style="color:#7f8a97;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${target}">${target}</span>` : ''}
+      ${target ? `<span style="color:var(--arctic-text-muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${target}">${target}</span>` : ''}
       <span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <span>${ingestLabel}:</span>
         <span style="display:inline-flex;gap:4px;flex-wrap:wrap;">${renderDigestTypeButtons(s.id, digestTypes)}</span>
@@ -1085,11 +1211,11 @@ function renderDeletedSourceCard(s) {
   return `<div class="source-card" style="padding:12px 16px;opacity:0.4;pointer-events:none;filter:grayscale(1);">
     <div class="source-header">
       <span class="source-name" style="font-size:14px;">${icon} ${s.name}
-        <span style="font-size:11px;color:#f0b040;background:#3a2a00;padding:1px 6px;border-radius:3px;margin-left:4px;">⚠️ ${lang==='zh'?'已停用':'Deactivated'}</span>
+        <span style="font-size:11px;color:var(--arctic-aurora-amber);background:var(--arctic-aurora-amber-dim);padding:1px 6px;border-radius:3px;margin-left:4px;">⚠️ ${lang==='zh'?'已停用':'Deactivated'}</span>
       </span>
     </div>
     <div class="source-meta" style="font-size:11px;">
-      <span style="color:#666;">${s.type}</span>
+      <span style="color:var(--arctic-text-muted);">${s.type}</span>
     </div>
   </div>`;
 }
@@ -1108,9 +1234,9 @@ async function renderSources() {
     // ── Not logged in + auth enabled: show read-only public sources list ──
     if (!isLoggedIn && !canManageWithoutAuth) {
       html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <h2 style="margin:0;font-size:16px;color:#e0e0e0;">📡 ${lang==='zh'?'信息源':'Sources'} <span style="font-size:13px;color:#666;font-weight:400;">${sources.length} ${lang==='zh'?'个公开源':'public sources'}</span></h2>
+        <h2 style="margin:0;font-size:16px;color:var(--arctic-text);">📡 ${lang==='zh'?'信息源':'Sources'} <span style="font-size:13px;color:var(--arctic-text-muted);font-weight:400;">${sources.length} ${lang==='zh'?'个公开源':'public sources'}</span></h2>
       </div>`;
-      if (sources.length) html += `<div style="font-size:12px;color:#555;margin-bottom:16px;">${lang==='zh'?'以下是为本站 Digest 提供内容的信息源':'These are the sources powering this digest'}</div>`;
+      if (sources.length) html += `<div style="font-size:12px;color:var(--arctic-text-muted);margin-bottom:16px;">${lang==='zh'?'以下是为本站 Digest 提供内容的信息源':'These are the sources powering this digest'}</div>`;
       html += '<div class="digest-list" style="gap:8px;">';
       for (const s of sources) {
         const icon = SOURCE_ICONS[s.type] || '📦';
@@ -1119,7 +1245,7 @@ async function renderSources() {
             <span class="source-name" style="font-size:13px;">${icon} ${s.name}</span>
           </div>
           <div class="source-meta" style="font-size:11px;">
-            <span style="background:#1a1a2e;padding:1px 6px;border-radius:3px;color:#6cf;">${s.type}</span>
+            <span style="background:var(--arctic-accent-dim);padding:1px 6px;border-radius:3px;color:var(--arctic-accent);">${s.type}</span>
           </div>
         </div>`;
       }
@@ -1130,11 +1256,11 @@ async function renderSources() {
 
     // ── Local mode (auth disabled): full source management without login ──
     if (canManageWithoutAuth) {
-      html += `<h2 style="margin:0 0 16px;font-size:16px;color:#e0e0e0;">📡 ${lang==='zh'?'信息源管理（本地模式）':'Source Management (Local Mode)'}</h2>`;
+      html += `<h2 style="margin:0 0 16px;font-size:16px;color:var(--arctic-text);">📡 ${lang==='zh'?'信息源管理（本地模式）':'Source Management (Local Mode)'}</h2>`;
       if (!sources.length) {
         html += `<div style="text-align:center;padding:28px 20px 18px;">
           <div style="font-size:18px;font-weight:600;margin-bottom:8px;">${lang==='zh'?'暂无信息源':'No sources yet'}</div>
-          <div style="color:#888;font-size:13px;margin-bottom:14px;">${lang==='zh'?'请粘贴 URL 自动识别，或手动添加':'Paste a URL for auto-detect, or add one manually'}</div>
+          <div style="color:var(--arctic-text-muted);font-size:13px;margin-bottom:14px;">${lang==='zh'?'请粘贴 URL 自动识别，或手动添加':'Paste a URL for auto-detect, or add one manually'}</div>
         </div>`;
       } else {
         html += '<div class="digest-list" style="gap:8px;margin-bottom:16px;">';
@@ -1160,16 +1286,16 @@ async function renderSources() {
       html += `<div style="text-align:center;padding:40px 20px;">
         <div style="font-size:28px;margin-bottom:12px;">📡</div>
         <div style="font-size:18px;font-weight:600;margin-bottom:8px;">${t('emptySourcesTitle')}</div>
-        <div style="color:#888;font-size:14px;margin-bottom:24px;white-space:pre-line;">${t('emptySourcesDesc')}</div>
+        <div style="color:var(--arctic-text-muted);font-size:14px;margin-bottom:24px;white-space:pre-line;">${t('emptySourcesDesc')}</div>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-          <button onclick="renderPacksSection()" style="padding:10px 24px;background:#1a3a1a;border:1px solid #40c040;border-radius:8px;color:#40c040;cursor:pointer;font-size:14px;transition:all .2s;">${t('emptySourcesPackHint')}</button>
-          <button onclick="document.getElementById('smart_url')?.focus()" style="padding:10px 24px;background:#2a2a2a;border:1px solid #444;border-radius:8px;color:#aaa;cursor:pointer;font-size:14px;transition:all .2s;">${t('emptySourcesAddBtn')}</button>
+          <button onclick="renderPacksSection()" style="padding:10px 24px;background:var(--arctic-aurora-green-dim);border:1px solid rgba(52,211,153,0.3);border-radius:8px;color:var(--arctic-aurora-green);cursor:pointer;font-size:14px;transition:all .2s;">${t('emptySourcesPackHint')}</button>
+          <button onclick="document.getElementById('smart_url')?.focus()" style="padding:10px 24px;background:var(--arctic-surface);border:1px solid var(--arctic-border);border-radius:8px;color:var(--arctic-text-secondary);cursor:pointer;font-size:14px;transition:all .2s;">${t('emptySourcesAddBtn')}</button>
         </div>
       </div>`;
       html += `<div id="smartAddContainer"></div>`;
       html += `<div id="sourceFormContainer"></div>`;
       // Recommended packs
-      html += `<div style="margin-top:24px;padding-top:20px;border-top:1px solid #222;">
+      html += `<div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--arctic-border);">
         <div style="font-size:15px;font-weight:600;margin-bottom:12px;">📦 ${lang==='zh'?'推荐 Packs':'Recommended Packs'}</div>
         <div id="emptyPacksList"><div class="loading">${t('loading')}</div></div>
       </div>`;
@@ -1179,7 +1305,7 @@ async function renderSources() {
       fetch(`${API}/packs`, { credentials: 'same-origin' }).then(r => r.json()).then(packs => {
         const container = document.getElementById('emptyPacksList');
         if (!container) return;
-        if (!packs.length) { container.innerHTML = `<div style="color:#555;font-size:13px;">${t('noPacks')}</div>`; return; }
+        if (!packs.length) { container.innerHTML = `<div style="color:var(--arctic-text-muted);font-size:13px;">${t('noPacks')}</div>`; return; }
         container.innerHTML = '<div class="digest-list" style="gap:8px;">' + packs.map(p => {
           const sources = p.sources || [];
           return `<div class="pack-card">
@@ -1211,12 +1337,12 @@ async function renderSources() {
     // ── Logged in, has subscriptions: Non-empty state ──
 
     // Page title
-    html += `<h2 style="margin:0 0 16px;font-size:16px;color:#e0e0e0;">📡 ${lang==='zh'?'我的信息源':'My Sources'}</h2>`;
+    html += `<h2 style="margin:0 0 16px;font-size:16px;color:var(--arctic-text);">📡 ${lang==='zh'?'我的信息源':'My Sources'}</h2>`;
 
     // Section 1: Subscribed (from subscriptions API)
-    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #282828;">
-      <span style="font-size:13px;color:#888;font-weight:600;letter-spacing:0.5px;">${t('subscribedSources')}</span>
-      <span style="font-size:12px;color:#555;">${t('activeCount')(activeSubscriptions.length, subscriptions.length)}</span>
+    html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--arctic-border);">
+      <span style="font-size:13px;color:var(--arctic-text-muted);font-weight:600;letter-spacing:0.5px;">${t('subscribedSources')}</span>
+      <span style="font-size:12px;color:var(--arctic-text-muted);">${t('activeCount')(activeSubscriptions.length, subscriptions.length)}</span>
     </div>`;
     html += '<div class="digest-list" style="gap:8px;margin-bottom:16px;">';
     for (const s of subscriptions) {
@@ -1234,15 +1360,15 @@ async function renderSources() {
     </div>`;
     html += `<div id="sourceFormContainer"></div>`;
     html += `<div style="margin-bottom:20px;">
-      <button onclick="renderPacksSection()" style="padding:6px 16px;background:transparent;border:1px solid #333;border-radius:6px;color:#888;cursor:pointer;font-size:13px;transition:all .2s;" onmouseover="this.style.borderColor='#6cf';this.style.color='#6cf'" onmouseout="this.style.borderColor='#333';this.style.color='#888'">${t('explorePacks')}</button>
+      <button onclick="renderPacksSection()" style="padding:6px 16px;background:transparent;border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text-muted);cursor:pointer;font-size:13px;transition:all .2s;" onmouseover="this.style.borderColor='var(--arctic-accent)';this.style.color='var(--arctic-accent)'" onmouseout="this.style.borderColor='var(--arctic-border)';this.style.color='var(--arctic-text-muted)'">${t('explorePacks')}</button>
     </div>`;
 
     // Section 3: Created by me (collapsible)
-    html += `<div style="border-top:1px solid #222;padding-top:16px;margin-bottom:20px;">
+    html += `<div style="border-top:1px solid var(--arctic-border);padding-top:16px;margin-bottom:20px;">
       <div onclick="createdByMeExpanded=!createdByMeExpanded;renderSources()" style="cursor:pointer;display:flex;align-items:center;gap:8px;margin-bottom:${createdByMeExpanded ? '12' : '0'}px;user-select:none;">
-        <span style="font-size:12px;color:#666;transition:transform .2s;display:inline-block;transform:rotate(${createdByMeExpanded ? '90' : '0'}deg);">▶</span>
-        <span style="font-size:13px;color:#888;font-weight:600;">${t('createdByMe')}</span>
-        <span style="font-size:12px;color:#555;">(${mySources.length})</span>
+        <span style="font-size:12px;color:var(--arctic-text-muted);transition:transform .2s;display:inline-block;transform:rotate(${createdByMeExpanded ? '90' : '0'}deg);">▶</span>
+        <span style="font-size:13px;color:var(--arctic-text-muted);font-weight:600;">${t('createdByMe')}</span>
+        <span style="font-size:12px;color:var(--arctic-text-muted);">(${mySources.length})</span>
       </div>
       ${createdByMeExpanded ? `<div class="digest-list" style="gap:8px;">
         ${mySources.map(s => renderSourceCard(s, { showToggle: false, showEdit: true, showDelete: true })).join('')}
@@ -1250,15 +1376,15 @@ async function renderSources() {
     </div>`;
 
     // Section 4: Source Packs
-    html += `<div style="border-top:1px solid #222;padding-top:20px;">
+    html += `<div style="border-top:1px solid var(--arctic-border);padding-top:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <h2 style="margin:0;font-size:16px;color:#e0e0e0;">📦 Source Packs</h2>
+        <h2 style="margin:0;font-size:16px;color:var(--arctic-text);">📦 Source Packs</h2>
         <div style="display:flex;gap:8px;">
-          <button onclick="showCreatePackModal()" style="padding:5px 12px;background:transparent;border:1px solid #333;border-radius:6px;color:#888;cursor:pointer;font-size:12px;transition:all .2s;" onmouseover="this.style.borderColor='#40c040';this.style.color='#40c040'" onmouseout="this.style.borderColor='#333';this.style.color='#888'">${lang==='zh'?'分享':'Share'}</button>
-          <button onclick="renderPacksSection()" style="padding:5px 12px;background:transparent;border:1px solid #333;border-radius:6px;color:#888;cursor:pointer;font-size:12px;transition:all .2s;" onmouseover="this.style.borderColor='#6cf';this.style.color='#6cf'" onmouseout="this.style.borderColor='#333';this.style.color='#888'">${lang==='zh'?'浏览':'Explore'}</button>
+          <button onclick="showCreatePackModal()" style="padding:5px 12px;background:transparent;border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text-muted);cursor:pointer;font-size:12px;transition:all .2s;" onmouseover="this.style.borderColor='var(--arctic-aurora-green)';this.style.color='var(--arctic-aurora-green)'" onmouseout="this.style.borderColor='var(--arctic-border)';this.style.color='var(--arctic-text-muted)'">${lang==='zh'?'分享':'Share'}</button>
+          <button onclick="renderPacksSection()" style="padding:5px 12px;background:transparent;border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text-muted);cursor:pointer;font-size:12px;transition:all .2s;" onmouseover="this.style.borderColor='var(--arctic-accent)';this.style.color='var(--arctic-accent)'" onmouseout="this.style.borderColor='var(--arctic-border)';this.style.color='var(--arctic-text-muted)'">${lang==='zh'?'浏览':'Explore'}</button>
         </div>
       </div>
-      <div style="color:#555;font-size:12px;">${lang==='zh'?'把你的信息源打包分享给别人，或安装别人的源合集':'Package your sources to share, or install curated packs from others'}</div>
+      <div style="color:var(--arctic-text-muted);font-size:12px;">${lang==='zh'?'把你的信息源打包分享给别人，或安装别人的源合集':'Package your sources to share, or install curated packs from others'}</div>
     </div>`;
 
     list.innerHTML = html;
@@ -1274,120 +1400,188 @@ let smartAddState = 'input'; // 'input' | 'loading' | 'preview' | 'error'
 let smartAddError = '';
 
 // ── Render Groups ──
+// Note: renderScheduleBar builds static HTML from trusted server data (group schedule JSON).
+// The schedule data structure {at: ["HH:MM"], on: "day"} is validated by the backend.
+function renderScheduleBar(schedule) {
+  let s;
+  try { s = typeof schedule === 'object' ? schedule : JSON.parse(schedule || '{}'); } catch { return ''; }
+  if (!s?.at?.length) return '<div style="font-size:12px;color:var(--arctic-text-muted);margin-top:6px;font-style:italic;">No schedule configured</div>';
+
+  const activeHours = new Set();
+  for (const t of s.at) {
+    const h = parseInt(t.split(':')[0], 10);
+    if (!isNaN(h)) activeHours.add(h);
+  }
+
+  let barHtml = '<div class="schedule-bar">';
+  for (let h = 0; h < 24; h++) {
+    const isActive = activeHours.has(h);
+    const pad = String(h).padStart(2, '0');
+    barHtml += '<div class="hour-slot ' + (isActive ? 'active' : '') + '" title="' + pad + ':00' + (isActive ? ' - Scheduled' : '') + '"></div>';
+  }
+  barHtml += '</div>';
+  barHtml += '<div class="schedule-bar-labels">';
+  for (let h = 0; h < 24; h++) {
+    barHtml += '<span>' + (h % 3 === 0 ? h : '') + '</span>';
+  }
+  barHtml += '</div>';
+  if (s.on) {
+    barHtml += '<div class="schedule-day-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ' + esc(s.on) + '</div>';
+  }
+  return barHtml;
+}
+
+// Note: renderGroups builds HTML from trusted API data. Group names/descriptions are
+// server-validated. The esc() function is used for user-provided text content.
 async function renderGroups() {
   const list = document.getElementById('list');
-  list.innerHTML = `<div class="loading">${t('loading')}</div>`;
+  list.innerHTML = '<div class="loading">' + t('loading') + '</div>';
   try {
-    const resp = await fetch(`${API}/groups`, { credentials: 'same-origin' });
+    const resp = await fetch(API + '/groups', { credentials: 'same-origin' });
     const groups = await resp.json();
 
-    let html = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <h2 style="margin:0;font-size:16px;color:#e0e0e0;">${t('groupsTitle')}</h2>
-        <button onclick="showGroupForm()" style="padding:6px 14px;background:#1a3a1a;border:1px solid #40c040;border-radius:6px;color:#40c040;cursor:pointer;font-size:12px;">${t('addGroup')}</button>
-      </div>
-    `;
+    let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
+      + '<h2 style="margin:0;font-size:16px;color:var(--arctic-text);">' + t('groupsTitle') + '</h2>'
+      + '<button onclick="showGroupForm()" style="padding:6px 14px;background:var(--arctic-aurora-green-dim);border:1px solid rgba(52,211,153,0.3);border-radius:var(--arctic-radius-xs);color:var(--arctic-aurora-green);cursor:pointer;font-size:12px;font-weight:500;transition:all .2s;">' + t('addGroup') + '</button>'
+      + '</div>';
 
     if (!groups.length) {
-      html += `<div class="empty">${t('noGroups')}</div>`;
+      html += '<div class="empty">' + t('noGroups') + '</div>';
     } else {
-      html += '<div class="digest-list" style="gap:8px;">';
+      html += '<div class="digest-list" style="gap:10px;">';
       for (const g of groups) {
         const digestTypes = g.digest_types.join(', ') || 'None';
-        html += `
-          <div class="source-card">
-            <div class="source-header">
-              <span class="source-name">🏷️ ${g.name}</span>
-              <div class="source-actions">
-                <button onclick="editGroup(${g.id})">${t('editGroup')}</button>
-                <button class="danger" onclick="deleteGroup(${g.id})">${t('deleteGroup')}</button>
-              </div>
-            </div>
-            ${g.description ? `<div style="font-size:13px;color:#888;margin-top:6px;">${g.description}</div>` : ''}
-            <div class="source-meta">
-              <span>⏰ ${g.timezone}</span>
-              <span>📊 ${digestTypes}</span>
-              ${g.telegram_thread_id ? `<span>📨 Thread ${g.telegram_thread_id}</span>` : '<span style="color:#555;">No Telegram</span>'}
-              ${(() => { try { const s = typeof g.schedule === 'object' ? g.schedule : JSON.parse(g.schedule || '{}'); return s?.at?.length ? `<span>🕐 ${s.at.join(', ')}${s.on ? ' ('+s.on+')' : ''}</span>` : ''; } catch { return ''; } })()}
-            </div>
-          </div>
-        `;
+        const scheduleObj = typeof g.schedule === 'object' ? g.schedule : (() => { try { return JSON.parse(g.schedule || '{}'); } catch { return {}; } })();
+        html += '<div class="source-card">'
+          + '<div class="source-header">'
+          + '<span class="source-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--arctic-accent)" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> ' + esc(g.name) + '</span>'
+          + '<div class="source-actions">'
+          + '<button onclick="editGroup(' + g.id + ')">' + t('editGroup') + '</button>'
+          + '<button class="danger" onclick="deleteGroup(' + g.id + ')">' + t('deleteGroup') + '</button>'
+          + '</div></div>'
+          + (g.description ? '<div style="font-size:13px;color:var(--arctic-text-secondary);margin-top:6px;">' + esc(g.description) + '</div>' : '')
+          + '<div class="source-meta">'
+          + '<span style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ' + esc(g.timezone) + '</span>'
+          + '<span style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> ' + esc(digestTypes) + '</span>'
+          + (g.telegram_thread_id ? '<span style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Thread ' + g.telegram_thread_id + '</span>' : '<span style="color:var(--arctic-text-muted);opacity:0.5;">No Telegram</span>')
+          + (g.prompt_name ? '<span style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> ' + esc(g.prompt_name) + '</span>' : '')
+          + '</div>'
+          + renderScheduleBar(scheduleObj)
+          + '</div>';
       }
       html += '</div>';
     }
 
-    html += `<div id="groupFormContainer" style="margin-top:16px;"></div>`;
+    // Group form is now a modal overlay — no inline container needed
     list.innerHTML = html;
   } catch (e) {
-    list.innerHTML = `<div class="empty">${t('cantLoad')}: ${e.message}</div>`;
+    list.innerHTML = '<div class="empty">' + t('cantLoad') + ': ' + esc(e.message) + '</div>';
   }
 }
 
 let currentGroupEdit = null;
 
-function showGroupForm(group = null) {
+async function showGroupForm(group = null) {
+  // Ensure prompts are loaded for the dropdown
+  if (!allPrompts.length) {
+    try {
+      const resp = await fetch(API + '/prompts', { credentials: 'same-origin' });
+      allPrompts = await resp.json();
+    } catch (e) { /* prompts dropdown will be empty */ }
+  }
   currentGroupEdit = group;
-  const container = document.getElementById('groupFormContainer');
-  const isEdit = !!group;
-  const formHtml = `
-    <div class="source-form">
-      <div class="form-row">
-        <label>${t('groupName')}</label>
-        <input type="text" id="group_name" value="${group?.name || ''}" placeholder="${t('groupName')}">
-      </div>
-      <div class="form-row">
-        <label>${t('groupDesc')}</label>
-        <input type="text" id="group_desc" value="${group?.description || ''}" placeholder="${t('groupDesc')}">
-      </div>
-      <div class="form-row">
-        <label>${t('groupTimezone')}</label>
-        <select id="group_timezone">
-          <option value="UTC" ${group?.timezone === 'UTC' ? 'selected' : ''}>UTC</option>
-          <option value="America/New_York" ${group?.timezone === 'America/New_York' ? 'selected' : ''}>America/New_York (EST/EDT)</option>
-          <option value="America/Los_Angeles" ${group?.timezone === 'America/Los_Angeles' ? 'selected' : ''}>America/Los_Angeles (PST/PDT)</option>
-          <option value="Europe/London" ${group?.timezone === 'Europe/London' ? 'selected' : ''}>Europe/London</option>
-          <option value="Europe/Lisbon" ${group?.timezone === 'Europe/Lisbon' ? 'selected' : ''}>Europe/Lisbon</option>
-          <option value="Europe/Paris" ${group?.timezone === 'Europe/Paris' ? 'selected' : ''}>Europe/Paris</option>
-          <option value="Asia/Singapore" ${group?.timezone === 'Asia/Singapore' ? 'selected' : ''}>Asia/Singapore</option>
-          <option value="Asia/Tokyo" ${group?.timezone === 'Asia/Tokyo' ? 'selected' : ''}>Asia/Tokyo</option>
-          <option value="Asia/Shanghai" ${group?.timezone === 'Asia/Shanghai' ? 'selected' : ''}>Asia/Shanghai</option>
-        </select>
-      </div>
-      <div class="form-row">
-        <label>${t('groupDigestTypes')}</label>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_4h" ${group?.digest_types?.includes('4h') ? 'checked' : ''}> 4H</label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_daily" ${group?.digest_types?.includes('daily') ? 'checked' : ''}> Daily</label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_weekly" ${group?.digest_types?.includes('weekly') ? 'checked' : ''}> Weekly</label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_monthly" ${group?.digest_types?.includes('monthly') ? 'checked' : ''}> Monthly</label>
-        </div>
-      </div>
-      <div class="form-row">
-        <label>Schedule (JSON)</label>
-        <input type="text" id="group_schedule" value="${group?.schedule && Object.keys(group.schedule).length ? JSON.stringify(group.schedule) : ''}" placeholder='{"at":["08:00","20:00"]} or {"at":["09:00"],"on":"Monday"}'>
-        <div style="font-size:11px;color:#666;margin-top:4px;">Times in group timezone. Optional "on": "weekday" / "weekend" / "Monday" etc.</div>
-      </div>
-      <div class="form-row">
-        <label>Telegram Thread ID</label>
-        <input type="number" id="group_tg_thread" value="${group?.telegram_thread_id || ''}" placeholder="e.g. 173 (topic thread ID)">
-      </div>
-      <div class="form-row">
-        <label>Telegram Chat ID (override)</label>
-        <input type="text" id="group_tg_chat" value="${group?.telegram_chat_id || ''}" placeholder="Leave blank to use global TELEGRAM_CHAT_ID">
-      </div>
-      <div class="form-actions">
-        <button class="primary" onclick="saveGroup()">${t('save')}</button>
-        <button onclick="hideGroupForm()">${t('cancel')}</button>
-      </div>
-    </div>
-  `;
-  container.innerHTML = formHtml;
+  // Parse existing schedule for interactive bar
+  let existingSchedule = {};
+  if (group?.schedule) {
+    existingSchedule = typeof group.schedule === 'object' ? group.schedule : (() => { try { return JSON.parse(group.schedule); } catch { return {}; } })();
+  }
+  const activeHours = new Set();
+  if (existingSchedule.at) {
+    for (const t of existingSchedule.at) {
+      const h = parseInt(t.split(':')[0], 10);
+      if (!isNaN(h)) activeHours.add(h);
+    }
+  }
+
+  // Build interactive hour-bar cells
+  let hourCells = '';
+  for (let h = 0; h < 24; h++) {
+    const pad = String(h).padStart(2, '0');
+    hourCells += '<div class="hour-cell' + (activeHours.has(h) ? ' active' : '') + '" data-hour="' + h + '" title="' + pad + ':00" onclick="toggleScheduleHour(this)">' + '</div>';
+  }
+  let hourLabels = '';
+  for (let h = 0; h < 24; h++) {
+    hourLabels += '<span>' + (h % 3 === 0 ? h : '') + '</span>';
+  }
+
+  const dayOptions = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'weekday', 'weekend'];
+  const currentDay = existingSchedule.on || '';
+  let daySelectHtml = '';
+  for (const d of dayOptions) {
+    daySelectHtml += '<option value="' + d + '"' + (d === currentDay ? ' selected' : '') + '>' + (d || 'Every day') + '</option>';
+  }
+
+  const timezoneOptions = ['UTC', 'America/New_York', 'America/Los_Angeles', 'Europe/London', 'Europe/Lisbon', 'Europe/Paris', 'Asia/Singapore', 'Asia/Tokyo', 'Asia/Shanghai'];
+  let tzSelectHtml = '';
+  for (const tz of timezoneOptions) {
+    tzSelectHtml += '<option value="' + tz + '"' + (group?.timezone === tz ? ' selected' : '') + '>' + tz + '</option>';
+  }
+
+  // Build prompt dropdown options
+  let promptSelectHtml = '<option value="">' + t('promptDefaultInherit') + '</option>';
+  // Use cached allPrompts if available, otherwise fetch synchronously-ish
+  const promptsForSelect = allPrompts.length ? allPrompts : [];
+  for (const p of promptsForSelect) {
+    promptSelectHtml += '<option value="' + p.id + '"' + (group?.prompt_id === p.id ? ' selected' : '') + '>' + esc(p.name) + (p.is_default ? ' (' + t('promptDefault') + ')' : '') + '</option>';
+  }
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.id = 'groupModal';
+  backdrop.onclick = function(e) { if (e.target === backdrop) hideGroupForm(); };
+  // Note: modal HTML uses esc() for user-provided values (name, description).
+  // Timezone, schedule hours, and thread IDs are server-validated structured data.
+  backdrop.innerHTML = '<div class="modal-content">'
+    + '<div class="modal-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--arctic-accent)" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> '
+    + (group ? t('editGroup') + ': ' + esc(group.name) : t('addGroup')) + '</div>'
+    + '<div class="source-form" style="background:transparent;border:none;padding:0;margin:0;">'
+    + '<div class="form-row"><label>' + t('groupName') + '</label><input type="text" id="group_name" value="' + esc(group?.name || '') + '" placeholder="' + t('groupName') + '"></div>'
+    + '<div class="form-row"><label>' + t('groupDesc') + '</label><input type="text" id="group_desc" value="' + esc(group?.description || '') + '" placeholder="' + t('groupDesc') + '"></div>'
+    + '<div class="form-row"><label>' + t('groupTimezone') + '</label><select id="group_timezone">' + tzSelectHtml + '</select></div>'
+    + '<div class="form-row"><label>' + t('groupDigestTypes') + '</label>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">'
+    + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_4h"' + (group?.digest_types?.includes('4h') ? ' checked' : '') + '> 4H</label>'
+    + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_daily"' + (group?.digest_types?.includes('daily') ? ' checked' : '') + '> Daily</label>'
+    + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_weekly"' + (group?.digest_types?.includes('weekly') ? ' checked' : '') + '> Weekly</label>'
+    + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="digest_monthly"' + (group?.digest_types?.includes('monthly') ? ' checked' : '') + '> Monthly</label>'
+    + '</div></div>'
+    + '<div class="form-row"><label>' + t('groupPrompt') + '</label><select id="group_prompt_id">' + promptSelectHtml + '</select></div>'
+    + '<div class="form-row"><div class="schedule-editor-label">Schedule — click hours to toggle</div>'
+    + '<div class="schedule-bar-edit" id="scheduleBarEdit">' + hourCells + '</div>'
+    + '<div class="schedule-edit-labels">' + hourLabels + '</div>'
+    + '<div class="schedule-day-select">'
+    + '<label style="font-size:11px;color:var(--arctic-text-muted);white-space:nowrap;">Run on:</label>'
+    + '<select id="group_schedule_day">' + daySelectHtml + '</select>'
+    + '</div></div>'
+    + '<div class="form-row"><label>Telegram Thread ID</label><input type="number" id="group_tg_thread" value="' + (group?.telegram_thread_id || '') + '" placeholder="e.g. 173 (topic thread ID)"></div>'
+    + '<div class="form-row"><label>Telegram Chat ID (override)</label><input type="text" id="group_tg_chat" value="' + esc(group?.telegram_chat_id || '') + '" placeholder="Leave blank to use global TELEGRAM_CHAT_ID"></div>'
+    + '<div class="form-actions"><button class="primary" onclick="saveGroup()">' + t('save') + '</button><button onclick="hideGroupForm()">' + t('cancel') + '</button></div>'
+    + '</div></div>';
+  document.body.appendChild(backdrop);
+  // Focus name input
+  setTimeout(() => document.getElementById('group_name')?.focus(), 100);
+}
+
+function toggleScheduleHour(el) {
+  el.classList.toggle('active');
 }
 
 function hideGroupForm() {
-  document.getElementById('groupFormContainer').innerHTML = '';
+  const modal = document.getElementById('groupModal');
+  if (modal) modal.remove();
   currentGroupEdit = null;
 }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('groupModal')) hideGroupForm(); });
 
 async function saveGroup() {
   const name = document.getElementById('group_name').value.trim();
@@ -1399,15 +1593,20 @@ async function saveGroup() {
   if (document.getElementById('digest_weekly').checked) digestTypes.push('weekly');
   if (document.getElementById('digest_monthly').checked) digestTypes.push('monthly');
 
+  // Build schedule from interactive hour-bar
   let schedule = {};
-  const scheduleVal = document.getElementById('group_schedule')?.value.trim();
-  if (scheduleVal) {
-    try { schedule = JSON.parse(scheduleVal); } catch { showToast('Invalid schedule JSON'); return; }
+  const activeSlots = document.querySelectorAll('#scheduleBarEdit .hour-cell.active');
+  if (activeSlots.length) {
+    schedule.at = Array.from(activeSlots).map(el => String(el.dataset.hour).padStart(2, '0') + ':00');
   }
+  const dayVal = document.getElementById('group_schedule_day')?.value;
+  if (dayVal) schedule.on = dayVal;
   const tgThreadRaw = document.getElementById('group_tg_thread')?.value.trim();
   const tgChatRaw   = document.getElementById('group_tg_chat')?.value.trim();
   const telegram_thread_id = tgThreadRaw ? parseInt(tgThreadRaw, 10) : null;
   const telegram_chat_id   = tgChatRaw || null;
+  const promptIdRaw = document.getElementById('group_prompt_id')?.value;
+  const prompt_id = promptIdRaw ? parseInt(promptIdRaw, 10) : null;
 
   if (!name) { showToast('Name required'); return; }
 
@@ -1418,7 +1617,7 @@ async function saveGroup() {
       method,
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ name, description, timezone, digestTypes, schedule, telegram_thread_id, telegram_chat_id })
+      body: JSON.stringify({ name, description, timezone, digestTypes, schedule, telegram_thread_id, telegram_chat_id, prompt_id })
     });
     showToast(currentGroupEdit ? t('groupUpdated') : t('groupCreated'));
     hideGroupForm();
@@ -1449,6 +1648,141 @@ async function deleteGroup(id) {
   }
 }
 
+// ── Render Prompts ──
+let allPrompts = [];
+
+async function renderPrompts() {
+  const list = document.getElementById('list');
+  list.innerHTML = '<div class="loading">' + t('loading') + '</div>';
+  try {
+    const resp = await fetch(API + '/prompts', { credentials: 'same-origin' });
+    allPrompts = await resp.json();
+
+    let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
+      + '<h2 style="margin:0;font-size:16px;color:var(--arctic-text);">' + t('promptsTitle') + '</h2>'
+      + '<button onclick="showPromptForm()" style="padding:6px 14px;background:var(--arctic-aurora-green-dim);border:1px solid rgba(52,211,153,0.3);border-radius:var(--arctic-radius-xs);color:var(--arctic-aurora-green);cursor:pointer;font-size:12px;font-weight:500;transition:all .2s;">' + t('addPrompt') + '</button>'
+      + '</div>';
+
+    if (!allPrompts.length) {
+      html += '<div class="empty">' + t('noPrompts') + '</div>';
+    } else {
+      html += '<div class="digest-list" style="gap:10px;">';
+      for (const p of allPrompts) {
+        const preview = (p.content || '').replace(/[#*_`]/g, '').substring(0, 120).trim();
+        const groupBadges = (p.assigned_groups || []).map(g =>
+          '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:500;background:var(--arctic-accent-dim);color:var(--arctic-accent);margin-right:4px;">' + esc(g.name) + '</span>'
+        ).join('');
+
+        html += '<div class="source-card">'
+          + '<div class="source-header">'
+          + '<span class="source-name">'
+          + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--arctic-accent)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> '
+          + esc(p.name)
+          + (p.is_default ? ' <span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:600;background:var(--arctic-aurora-amber-dim);color:var(--arctic-aurora-amber);margin-left:6px;">' + t('promptDefault') + '</span>' : '')
+          + '</span>'
+          + '<div class="source-actions">'
+          + '<button onclick="showPromptForm(' + p.id + ')">' + t('editPrompt') + '</button>'
+          + (p.is_default ? '' : '<button class="danger" onclick="deletePromptById(' + p.id + ')">' + t('deletePrompt') + '</button>')
+          + '</div></div>'
+          + '<div style="font-size:12px;color:var(--arctic-text-muted);margin-top:6px;line-height:1.5;font-family:\'Fira Code\',monospace;white-space:pre-wrap;max-height:60px;overflow:hidden;opacity:0.7;">' + esc(preview) + (preview.length >= 120 ? '...' : '') + '</div>'
+          + (groupBadges ? '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">'
+            + '<span style="font-size:10px;color:var(--arctic-text-muted);margin-right:4px;">' + t('promptUsedBy') + ':</span>'
+            + groupBadges + '</div>' : '<div style="margin-top:8px;font-size:10px;color:var(--arctic-text-muted);font-style:italic;">Not assigned to any group</div>')
+          + '</div>';
+      }
+      html += '</div>';
+    }
+
+    list.innerHTML = html;
+  } catch (e) {
+    list.innerHTML = '<div class="empty">' + t('cantLoad') + ': ' + esc(e.message) + '</div>';
+  }
+}
+
+async function showPromptForm(promptId) {
+  let prompt = null;
+  if (promptId) {
+    try {
+      const resp = await fetch(API + '/prompts/' + promptId, { credentials: 'same-origin' });
+      prompt = await resp.json();
+    } catch (e) {
+      showToast('Error: ' + e.message);
+      return;
+    }
+  }
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.id = 'promptModal';
+  backdrop.onclick = function(e) { if (e.target === backdrop) hidePromptForm(); };
+  backdrop.innerHTML = '<div class="modal-content" style="max-width:640px;">'
+    + '<div class="modal-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--arctic-accent)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> '
+    + (prompt ? t('editPrompt') + ': ' + esc(prompt.name) : t('addPrompt')) + '</div>'
+    + '<div class="source-form" style="background:transparent;border:none;padding:0;margin:0;">'
+    + '<div class="form-row"><label>' + t('promptName') + '</label><input type="text" id="prompt_name" value="' + esc(prompt?.name || '') + '" placeholder="e.g. Portugal News"' + (prompt?.is_default ? ' disabled style="opacity:0.6;"' : '') + '></div>'
+    + '<div class="form-row"><label>' + t('promptContent') + '</label>'
+    + '<textarea id="prompt_content" style="min-height:280px;font-family:\'Fira Code\',monospace;font-size:12px;line-height:1.6;resize:vertical;">' + esc(prompt?.content || '') + '</textarea>'
+    + '<div style="font-size:10px;color:var(--arctic-text-muted);margin-top:4px;">' + t('promptVarsHint') + '</div>'
+    + '</div>'
+    + '<div class="form-actions">'
+    + '<button class="primary" onclick="savePrompt(' + (promptId || 'null') + ')">' + t('save') + '</button>'
+    + '<button onclick="hidePromptForm()">' + t('cancel') + '</button>'
+    + '</div></div></div>';
+  document.body.appendChild(backdrop);
+  setTimeout(() => document.getElementById(prompt?.is_default ? 'prompt_content' : 'prompt_name')?.focus(), 100);
+}
+
+function hidePromptForm() {
+  const modal = document.getElementById('promptModal');
+  if (modal) modal.remove();
+}
+
+async function savePrompt(id) {
+  const name = document.getElementById('prompt_name').value.trim();
+  const content = document.getElementById('prompt_content').value;
+  if (!name || !content) { showToast('Name and content are required'); return; }
+
+  try {
+    if (id) {
+      await fetch(API + '/prompts/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ name, content })
+      });
+      showToast(t('promptSaved'));
+    } else {
+      await fetch(API + '/prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ name, content })
+      });
+      showToast(t('promptCreated'));
+    }
+    hidePromptForm();
+    renderPrompts();
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+async function deletePromptById(id) {
+  if (!confirm(t('confirmDeletePrompt'))) return;
+  try {
+    const resp = await fetch(API + '/prompts/' + id, { method: 'DELETE', credentials: 'same-origin' });
+    const result = await resp.json();
+    if (result.error) { showToast(result.error); return; }
+    showToast(t('promptDeleted'));
+    renderPrompts();
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+// Add Escape key handler for prompt modal
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('promptModal')) hidePromptForm(); });
+
 // ── Render Settings ──
 async function renderSettings() {
   const list = document.getElementById('list');
@@ -1462,7 +1796,7 @@ async function renderSettings() {
 
     let html = `
       <div style="margin-bottom:16px;">
-        <h2 style="margin:0 0 16px;font-size:16px;color:#e0e0e0;">${t('settingsTitle')}</h2>
+        <h2 style="margin:0 0 16px;font-size:16px;color:var(--arctic-text);">${t('settingsTitle')}</h2>
         <div class="source-form">
           <div class="form-row">
             <label>${t('settingsTimezone')}</label>
@@ -1528,49 +1862,49 @@ function renderSmartAdd() {
   if (!container) return;
 
   let html = `<div class="source-form" style="margin-bottom:16px;">`;
-  html += `<div style="font-size:13px;color:#888;margin-bottom:10px;">${t('pasteUrl')}</div>`;
+  html += `<div style="font-size:13px;color:var(--arctic-text-muted);margin-bottom:10px;">${t('pasteUrl')}</div>`;
   html += `<div style="display:flex;gap:8px;">
-    <input id="smart_url" type="url" placeholder="${t('urlPlaceholder')}" style="flex:1;padding:8px 12px;background:#0f0f0f;border:1px solid #333;border-radius:6px;color:#e0e0e0;font-size:13px;" value="${document.getElementById('smart_url')?.value || ''}" onkeydown="if(event.key==='Enter')detectSource()">
-    <button onclick="detectSource()" id="detectBtn" style="padding:8px 18px;background:#1a3a1a;border:1px solid #40c040;border-radius:8px;color:#40c040;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s;" ${smartAddState==='loading'?'disabled':''}>${smartAddState==='loading' ? t('detecting') : t('detect')}</button>
+    <input id="smart_url" type="url" placeholder="${t('urlPlaceholder')}" style="flex:1;padding:8px 12px;background:var(--arctic-input-bg);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text);font-size:13px;" value="${document.getElementById('smart_url')?.value || ''}" onkeydown="if(event.key==='Enter')detectSource()">
+    <button onclick="detectSource()" id="detectBtn" style="padding:8px 18px;background:var(--arctic-aurora-green-dim);border:1px solid rgba(52,211,153,0.3);border-radius:8px;color:var(--arctic-aurora-green);cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s;" ${smartAddState==='loading'?'disabled':''}>${smartAddState==='loading' ? t('detecting') : t('detect')}</button>
   </div>`;
 
   if (smartAddState === 'preview' && resolvedSource) {
-    html += `<div style="margin-top:14px;padding:14px;background:#0f0f0f;border:1px solid #333;border-radius:8px;">
+    html += `<div style="margin-top:14px;padding:14px;background:var(--arctic-input-bg);border:1px solid var(--arctic-border);border-radius:8px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
         <span style="font-size:18px;">${resolvedSource.icon || '📦'}</span>
-        <span style="font-size:12px;color:#888;background:#1a1a1a;padding:2px 8px;border-radius:4px;border:1px solid #282828;">${resolvedSource.type}</span>
+        <span style="font-size:12px;color:var(--arctic-text-muted);background:var(--arctic-bg-elevated);padding:2px 8px;border-radius:4px;border:1px solid var(--arctic-border);">${resolvedSource.type}</span>
       </div>
       <div style="margin-bottom:8px;">
-        <span id="resolvedName" style="font-size:15px;font-weight:600;cursor:pointer;border-bottom:1px dashed #555;" onclick="this.contentEditable=true;this.focus();this.style.borderBottom='1px solid #40c040'" onblur="this.contentEditable=false;this.style.borderBottom='1px dashed #555';resolvedSource.name=this.textContent.trim()">${resolvedSource.name}</span>
+        <span id="resolvedName" style="font-size:15px;font-weight:600;cursor:pointer;border-bottom:1px dashed var(--arctic-text-muted);" onclick="this.contentEditable=true;this.focus();this.style.borderBottom='1px solid var(--arctic-aurora-green)'" onblur="this.contentEditable=false;this.style.borderBottom='1px dashed var(--arctic-text-muted)';resolvedSource.name=this.textContent.trim()">${resolvedSource.name}</span>
       </div>
-      <div style="font-size:12px;color:#555;margin-bottom:8px;word-break:break-all;">${document.getElementById('smart_url')?.value || ''}</div>
-      ${resolvedSource.preview && resolvedSource.preview.length ? `<div style="margin-bottom:12px;padding:10px;background:#141414;border-radius:6px;border:1px solid #222;">
-        <div style="font-size:11px;color:#666;margin-bottom:6px;">📄 ${t('previewRecent')}</div>
-        ${resolvedSource.preview.slice(0,5).map(p => `<div style="font-size:12px;color:#aaa;padding:2px 0;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.url ? `<a href="${p.url}" target="_blank" style="color:#58a6ff;text-decoration:none;" title="${p.title}">` : ''}• ${p.title}${p.url ? '</a>' : ''}</div>`).join('')}
+      <div style="font-size:12px;color:var(--arctic-text-muted);margin-bottom:8px;word-break:break-all;">${document.getElementById('smart_url')?.value || ''}</div>
+      ${resolvedSource.preview && resolvedSource.preview.length ? `<div style="margin-bottom:12px;padding:10px;background:var(--arctic-surface);border-radius:6px;border:1px solid var(--arctic-border);">
+        <div style="font-size:11px;color:var(--arctic-text-muted);margin-bottom:6px;">📄 ${t('previewRecent')}</div>
+        ${resolvedSource.preview.slice(0,5).map(p => `<div style="font-size:12px;color:var(--arctic-text-secondary);padding:2px 0;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.url ? `<a href="${p.url}" target="_blank" style="color:var(--arctic-accent);text-decoration:none;" title="${p.title}">` : ''}• ${p.title}${p.url ? '</a>' : ''}</div>`).join('')}
       </div>` : ''}
-      <div style="display:flex;flex-wrap:wrap;gap:10px 14px;margin-bottom:10px;font-size:12px;color:#aaa;">
-        <span style="color:#666;">${lang==='zh' ? '采集周期' : 'Ingestion'}:</span>
+      <div style="display:flex;flex-wrap:wrap;gap:10px 14px;margin-bottom:10px;font-size:12px;color:var(--arctic-text-secondary);">
+        <span style="color:var(--arctic-text-muted);">${lang==='zh' ? '采集周期' : 'Ingestion'}:</span>
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="smart_dt_4h"> 4h</label>
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="smart_dt_daily" checked> daily</label>
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="smart_dt_weekly"> weekly</label>
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="smart_dt_monthly"> monthly</label>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;cursor:pointer;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--arctic-text-muted);cursor:pointer;">
           <input type="checkbox" id="smart_public" style="width:14px;height:14px;"> ${t('publicSource')}
         </label>
         <div style="display:flex;gap:8px;">
-          <button onclick="confirmSmartAdd()" style="padding:8px 18px;background:#1a3a1a;border:1px solid #40c040;border-radius:8px;color:#40c040;cursor:pointer;font-size:13px;">✓ ${t('confirmAdd')}</button>
-          <button onclick="smartAddState='input';resolvedSource=null;renderSmartAdd()" style="padding:8px 18px;background:#2a2a2a;border:1px solid #444;border-radius:8px;color:#aaa;cursor:pointer;font-size:13px;">${t('cancel')}</button>
+          <button onclick="confirmSmartAdd()" style="padding:8px 18px;background:var(--arctic-aurora-green-dim);border:1px solid rgba(52,211,153,0.3);border-radius:8px;color:var(--arctic-aurora-green);cursor:pointer;font-size:13px;">✓ ${t('confirmAdd')}</button>
+          <button onclick="smartAddState='input';resolvedSource=null;renderSmartAdd()" style="padding:8px 18px;background:var(--arctic-surface);border:1px solid var(--arctic-border);border-radius:8px;color:var(--arctic-text-secondary);cursor:pointer;font-size:13px;">${t('cancel')}</button>
         </div>
       </div>
     </div>`;
   }
 
   if (smartAddState === 'error') {
-    html += `<div style="margin-top:10px;font-size:12px;color:#f04040;">${t('cannotDetect')}<a href="#" onclick="event.preventDefault();toggleSourceForm()" style="color:#58a6ff;">${t('manualAdd')} ›</a></div>`;
+    html += `<div style="margin-top:10px;font-size:12px;color:var(--arctic-aurora-red);">${t('cannotDetect')}<a href="#" onclick="event.preventDefault();toggleSourceForm()" style="color:var(--arctic-accent);">${t('manualAdd')} ›</a></div>`;
   } else {
-    html += `<div style="margin-top:8px;"><a href="#" onclick="event.preventDefault();toggleSourceForm()" style="font-size:12px;color:#555;text-decoration:none;">${t('manualAdd')} ›</a></div>`;
+    html += `<div style="margin-top:8px;"><a href="#" onclick="event.preventDefault();toggleSourceForm()" style="font-size:12px;color:var(--arctic-text-muted);text-decoration:none;">${t('manualAdd')} ›</a></div>`;
   }
 
   html += `</div>`;
@@ -1716,7 +2050,7 @@ async function renderInlineSourceForm(sourceId) {
   const typeOptions = SOURCE_TYPES.map(t => `<option value="${t}" ${s && s.type === t ? 'selected' : ''}>${SOURCE_ICONS[t] || ''} ${t}</option>`).join('');
   const configVal = JSON.stringify(cleanCfg, null, 2);
 
-  container.innerHTML = `<div class="source-form" style="background:#0f0f0f;padding:12px;border-radius:8px;border:1px solid #2a2a2a;">
+  container.innerHTML = `<div class="source-form" style="background:var(--arctic-input-bg);padding:12px;border-radius:8px;border:1px solid var(--arctic-border);">
     <div class="form-row"><label>${t('sourceName')}</label><input id="inline_sf_name" value="${s.name}" placeholder="e.g. AI Twitter Feed"></div>
     <div class="form-row"><label>${t('sourceType')}</label><select id="inline_sf_type">${typeOptions}</select></div>
     <div class="form-row">
@@ -1725,7 +2059,7 @@ async function renderInlineSourceForm(sourceId) {
     </div>
     <div class="form-row">
       <label>${lang==='zh' ? '采集周期' : 'Ingestion Types'}</label>
-      <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#aaa;">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--arctic-text-secondary);">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="inline_sf_dt_4h" ${digestTypes.includes('4h') ? 'checked' : ''}> 4h</label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="inline_sf_dt_daily" ${digestTypes.includes('daily') ? 'checked' : ''}> daily</label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="inline_sf_dt_weekly" ${digestTypes.includes('weekly') ? 'checked' : ''}> weekly</label>
@@ -1828,21 +2162,21 @@ function showFeedInfo() {
     const modal = document.createElement('div');
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;';
     modal.onclick = e => { if (e.target === modal) modal.remove(); };
-    modal.innerHTML = `<div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:24px;max-width:480px;width:90%;">
+    modal.innerHTML = `<div style="background:var(--arctic-bg-elevated);border:1px solid var(--arctic-border);border-radius:12px;padding:24px;max-width:480px;width:90%;">
       <h3 style="margin:0 0 16px;font-size:16px;">📡 Your Feed</h3>
       <div style="margin-bottom:12px;">
-        <label style="font-size:12px;color:#888;">JSON Feed</label>
-        <div style="display:flex;gap:6px;margin-top:4px;"><input readonly value="${jsonUrl}" style="flex:1;padding:6px 10px;background:#0f0f0f;border:1px solid #333;border-radius:6px;color:#e0e0e0;font-size:12px;" onclick="this.select()"><button onclick="navigator.clipboard.writeText('${jsonUrl}');showToast('Copied!')" style="padding:6px 12px;background:#2a2a2a;border:1px solid #444;border-radius:6px;color:#aaa;cursor:pointer;font-size:12px;">📋</button></div>
+        <label style="font-size:12px;color:var(--arctic-text-muted);">JSON Feed</label>
+        <div style="display:flex;gap:6px;margin-top:4px;"><input readonly value="${jsonUrl}" style="flex:1;padding:6px 10px;background:var(--arctic-input-bg);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text);font-size:12px;" onclick="this.select()"><button onclick="navigator.clipboard.writeText('${jsonUrl}');showToast('Copied!')" style="padding:6px 12px;background:var(--arctic-surface);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text-secondary);cursor:pointer;font-size:12px;">📋</button></div>
       </div>
       <div style="margin-bottom:12px;">
-        <label style="font-size:12px;color:#888;">RSS Feed</label>
-        <div style="display:flex;gap:6px;margin-top:4px;"><input readonly value="${rssUrl}" style="flex:1;padding:6px 10px;background:#0f0f0f;border:1px solid #333;border-radius:6px;color:#e0e0e0;font-size:12px;" onclick="this.select()"><button onclick="navigator.clipboard.writeText('${rssUrl}');showToast('Copied!')" style="padding:6px 12px;background:#2a2a2a;border:1px solid #444;border-radius:6px;color:#aaa;cursor:pointer;font-size:12px;">📋</button></div>
+        <label style="font-size:12px;color:var(--arctic-text-muted);">RSS Feed</label>
+        <div style="display:flex;gap:6px;margin-top:4px;"><input readonly value="${rssUrl}" style="flex:1;padding:6px 10px;background:var(--arctic-input-bg);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text);font-size:12px;" onclick="this.select()"><button onclick="navigator.clipboard.writeText('${rssUrl}');showToast('Copied!')" style="padding:6px 12px;background:var(--arctic-surface);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text-secondary);cursor:pointer;font-size:12px;">📋</button></div>
       </div>
       <div style="margin-bottom:16px;">
-        <label style="font-size:12px;color:#888;">Simple API</label>
-        <div style="display:flex;gap:6px;margin-top:4px;"><input readonly value="${apiUrl}" style="flex:1;padding:6px 10px;background:#0f0f0f;border:1px solid #333;border-radius:6px;color:#e0e0e0;font-size:12px;" onclick="this.select()"><button onclick="navigator.clipboard.writeText('${apiUrl}');showToast('Copied!')" style="padding:6px 12px;background:#2a2a2a;border:1px solid #444;border-radius:6px;color:#aaa;cursor:pointer;font-size:12px;">📋</button></div>
+        <label style="font-size:12px;color:var(--arctic-text-muted);">Simple API</label>
+        <div style="display:flex;gap:6px;margin-top:4px;"><input readonly value="${apiUrl}" style="flex:1;padding:6px 10px;background:var(--arctic-input-bg);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text);font-size:12px;" onclick="this.select()"><button onclick="navigator.clipboard.writeText('${apiUrl}');showToast('Copied!')" style="padding:6px 12px;background:var(--arctic-surface);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text-secondary);cursor:pointer;font-size:12px;">📋</button></div>
       </div>
-      <div style="text-align:right;"><button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 20px;background:#2a2a2a;border:1px solid #444;border-radius:6px;color:#aaa;cursor:pointer;font-size:13px;">Close</button></div>
+      <div style="text-align:right;"><button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 20px;background:var(--arctic-surface);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text-secondary);cursor:pointer;font-size:13px;">Close</button></div>
     </div>`;
     document.body.appendChild(modal);
   });
@@ -1873,7 +2207,7 @@ function renderSourceForm() {
     <div class="form-row"><label>${t('sourceType')}</label><select id="sf_type" onchange="onTypeChange()">${typeOptions}</select></div>
     <div class="form-row">
       <label>${lang==='zh' ? '采集周期' : 'Ingestion Types'}</label>
-      <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#aaa;">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--arctic-text-secondary);">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="sf_dt_4h" ${digestTypes.includes('4h') ? 'checked' : ''}> 4h</label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="sf_dt_daily" ${digestTypes.includes('daily') ? 'checked' : ''}> daily</label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="sf_dt_weekly" ${digestTypes.includes('weekly') ? 'checked' : ''}> weekly</label>
@@ -2012,8 +2346,8 @@ async function renderPacksSection() {
     const packs = await r.json();
     let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div>
-        <h2 style="margin:0;font-size:16px;color:#e0e0e0;">📦 ${lang==='zh'?'Source Packs 市场':'Source Packs Market'}</h2>
-        <div style="font-size:12px;color:#555;margin-top:4px;">${lang==='zh'?'发现和安装他人分享的信息源合集':'Discover and install curated source packs from others'}</div>
+        <h2 style="margin:0;font-size:16px;color:var(--arctic-text);">📦 ${lang==='zh'?'Source Packs 市场':'Source Packs Market'}</h2>
+        <div style="font-size:12px;color:var(--arctic-text-muted);margin-top:4px;">${lang==='zh'?'发现和安装他人分享的信息源合集':'Discover and install curated source packs from others'}</div>
       </div>
       <button onclick="renderSources()" class="back-btn">${t('back')}</button>
     </div>`;
@@ -2043,7 +2377,7 @@ async function renderPacksSection() {
             </div>
             <div class="pack-actions">
               ${currentUser && p.created_by === currentUser.id
-                ? `<button class="pack-install-btn" style="background:#1a1a2e;border-color:#6cf;color:#6cf;" onclick="navigator.clipboard.writeText(location.origin+'/pack/${p.slug}');showToast('${lang==='zh'?'链接已复制':'Link copied'}')">${t('sharePack2')}</button>
+                ? `<button class="pack-install-btn" style="background:var(--arctic-accent-dim);border-color:var(--arctic-accent);color:var(--arctic-accent);" onclick="navigator.clipboard.writeText(location.origin+'/pack/${p.slug}');showToast('${lang==='zh'?'链接已复制':'Link copied'}')">${t('sharePack2')}</button>
                    <button class="pack-delete-btn" onclick="delPack(${p.id})">${t('deletePack')}</button>`
                 : currentUser
                   ? `<button class="pack-install-btn" onclick="installPack('${p.slug}', this)">${t('installPack')}</button>`
@@ -2100,21 +2434,21 @@ function showCreatePackModal() {
   const modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;';
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
-  modal.innerHTML = `<div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:24px;max-width:480px;width:90%;">
+  modal.innerHTML = `<div style="background:var(--arctic-bg-elevated);border:1px solid var(--arctic-border);border-radius:12px;padding:24px;max-width:480px;width:90%;">
     <h3 style="margin:0 0 16px;font-size:16px;">📦 ${t('sharePack')}</h3>
     <div style="margin-bottom:12px;">
-      <label style="font-size:12px;color:#888;">${t('packName')}</label>
-      <input id="pack_name" style="width:100%;padding:8px 12px;background:#0f0f0f;border:1px solid #333;border-radius:6px;color:#e0e0e0;font-size:13px;margin-top:4px;" placeholder="${currentUser ? currentUser.name + "'s AI Sources" : 'My AI Sources'}" value="${currentUser ? currentUser.name + "'s AI Sources" : ''}">
+      <label style="font-size:12px;color:var(--arctic-text-muted);">${t('packName')}</label>
+      <input id="pack_name" style="width:100%;padding:8px 12px;background:var(--arctic-input-bg);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text);font-size:13px;margin-top:4px;" placeholder="${currentUser ? currentUser.name + "'s AI Sources" : 'My AI Sources'}" value="${currentUser ? currentUser.name + "'s AI Sources" : ''}">
     </div>
     <div style="margin-bottom:16px;">
-      <label style="font-size:12px;color:#888;">${t('packDesc')}</label>
-      <textarea id="pack_desc" style="width:100%;padding:8px 12px;background:#0f0f0f;border:1px solid #333;border-radius:6px;color:#e0e0e0;font-size:13px;margin-top:4px;min-height:60px;resize:vertical;font-family:inherit;" placeholder="A curated set of AI news sources..."></textarea>
+      <label style="font-size:12px;color:var(--arctic-text-muted);">${t('packDesc')}</label>
+      <textarea id="pack_desc" style="width:100%;padding:8px 12px;background:var(--arctic-input-bg);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text);font-size:13px;margin-top:4px;min-height:60px;resize:vertical;font-family:inherit;" placeholder="A curated set of AI news sources..."></textarea>
     </div>
-    <div id="pack_preview" style="margin-bottom:12px;padding:10px;background:#0a0a0a;border:1px solid #222;border-radius:6px;font-size:12px;color:#666;">⏳</div>
-    <div style="font-size:11px;color:#555;margin-bottom:12px;line-height:1.5;">${lang==='zh' ? '💡 将你所有活跃的信息源打包生成一个公开链接，其他人可以一键安装到自己的 dashboard' : '💡 Packages all your active sources into a shareable link. Others can install them to their dashboard in one click.'}</div>
+    <div id="pack_preview" style="margin-bottom:12px;padding:10px;background:var(--arctic-input-bg);border:1px solid var(--arctic-border);border-radius:6px;font-size:12px;color:var(--arctic-text-muted);">⏳</div>
+    <div style="font-size:11px;color:var(--arctic-text-muted);margin-bottom:12px;line-height:1.5;">${lang==='zh' ? '💡 将你所有活跃的信息源打包生成一个公开链接，其他人可以一键安装到自己的 dashboard' : '💡 Packages all your active sources into a shareable link. Others can install them to their dashboard in one click.'}</div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 20px;background:#2a2a2a;border:1px solid #444;border-radius:6px;color:#aaa;cursor:pointer;font-size:13px;">${t('cancel')}</button>
-      <button onclick="doCreatePack(this)" style="padding:8px 20px;background:#1a3a1a;border:1px solid #40c040;border-radius:6px;color:#40c040;cursor:pointer;font-size:13px;">${t('createPack')}</button>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 20px;background:var(--arctic-surface);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text-secondary);cursor:pointer;font-size:13px;">${t('cancel')}</button>
+      <button onclick="doCreatePack(this)" style="padding:8px 20px;background:var(--arctic-aurora-green-dim);border:1px solid rgba(52,211,153,0.3);border-radius:6px;color:var(--arctic-aurora-green);cursor:pointer;font-size:13px;">${t('createPack')}</button>
     </div>
   </div>`;
   document.body.appendChild(modal);
@@ -2123,7 +2457,7 @@ function showCreatePackModal() {
     const mySources = sources.filter(s => s.is_active && currentUser && s.created_by === currentUser.id);
     if (!mySources.length) {
       const prev = document.getElementById('pack_preview');
-      if (prev) prev.innerHTML = `<div style="color:#f85149;">${lang==='zh'?'你还没有自己创建的源，只能打包自己创建的源':'You have no sources created by you. Only sources you created can be packaged.'}</div>`;
+      if (prev) prev.innerHTML = `<div style="color:var(--arctic-aurora-red);">${lang==='zh'?'你还没有自己创建的源，只能打包自己创建的源':'You have no sources created by you. Only sources you created can be packaged.'}</div>`;
       return;
     }
     const types = [...new Set(mySources.map(s => s.type))];
@@ -2133,7 +2467,7 @@ function showCreatePackModal() {
     const descEl = document.getElementById('pack_desc');
     if (nameEl && !nameEl._edited) nameEl.value = `${currentUser?.name || 'My'}'s ${labels.slice(0,2).join(' + ')} Pack`;
     const prev = document.getElementById('pack_preview');
-    if (prev) prev.innerHTML = `<div style="color:#888;margin-bottom:6px;">${lang==='zh'?'将打包以下':'Will include'} <b style="color:#40c040;">${mySources.length}</b> ${lang==='zh'?'个源：':'sources:'}</div>` + mySources.map(s => `<div style="padding:2px 0;">${SOURCE_ICONS[s.type]||'📦'} ${s.name} <span style="color:#444;">· ${s.type}</span></div>`).join('');
+    if (prev) prev.innerHTML = `<div style="color:var(--arctic-text-muted);margin-bottom:6px;">${lang==='zh'?'将打包以下':'Will include'} <b style="color:var(--arctic-aurora-green);">${mySources.length}</b> ${lang==='zh'?'个源：':'sources:'}</div>` + mySources.map(s => `<div style="padding:2px 0;">${SOURCE_ICONS[s.type]||'📦'} ${s.name} <span style="color:var(--arctic-text-muted);">· ${s.type}</span></div>`).join('');
     if (descEl && !descEl._edited) descEl.value = `${mySources.length} curated sources: ${mySources.map(s => s.name).join(', ')}`;
   }).catch(() => {});
   document.getElementById('pack_name').oninput = function() { this._edited = true; };
@@ -2164,10 +2498,10 @@ async function doCreatePack(btn) {
       const linkModal = document.createElement('div');
       linkModal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;';
       linkModal.onclick = e => { if (e.target === linkModal) linkModal.remove(); };
-      linkModal.innerHTML = `<div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:24px;max-width:480px;width:90%;">
+      linkModal.innerHTML = `<div style="background:var(--arctic-bg-elevated);border:1px solid var(--arctic-border);border-radius:12px;padding:24px;max-width:480px;width:90%;">
         <h3 style="margin:0 0 16px;font-size:16px;">🔗 ${t('shareLink')}</h3>
-        <div style="display:flex;gap:6px;"><input readonly value="${shareUrl}" style="flex:1;padding:8px 12px;background:#0f0f0f;border:1px solid #333;border-radius:6px;color:#e0e0e0;font-size:13px;" onclick="this.select()"><button onclick="navigator.clipboard.writeText('${shareUrl}');showToast(t('copied'))" style="padding:8px 14px;background:#2a2a2a;border:1px solid #444;border-radius:6px;color:#aaa;cursor:pointer;font-size:13px;">📋</button></div>
-        <div style="text-align:right;margin-top:16px;"><button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 20px;background:#2a2a2a;border:1px solid #444;border-radius:6px;color:#aaa;cursor:pointer;font-size:13px;">Close</button></div>
+        <div style="display:flex;gap:6px;"><input readonly value="${shareUrl}" style="flex:1;padding:8px 12px;background:var(--arctic-input-bg);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text);font-size:13px;" onclick="this.select()"><button onclick="navigator.clipboard.writeText('${shareUrl}');showToast(t('copied'))" style="padding:8px 14px;background:var(--arctic-surface);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text-secondary);cursor:pointer;font-size:13px;">📋</button></div>
+        <div style="text-align:right;margin-top:16px;"><button onclick="this.closest('div[style*=fixed]').remove()" style="padding:8px 20px;background:var(--arctic-surface);border:1px solid var(--arctic-border);border-radius:6px;color:var(--arctic-text-secondary);cursor:pointer;font-size:13px;">Close</button></div>
       </div>`;
       document.body.appendChild(linkModal);
     } else {
@@ -2190,7 +2524,7 @@ async function renderPackDetailPage(slug) {
     let html = `<div class="pack-detail-page">
       <div style="margin-bottom:20px;">
         <div style="font-size:24px;font-weight:700;">📦 ${esc(p.name)}</div>
-        ${p.description ? `<div style="font-size:14px;color:#888;margin-top:8px;">${esc(p.description)}</div>` : ''}
+        ${p.description ? `<div style="font-size:14px;color:var(--arctic-text-muted);margin-top:8px;">${esc(p.description)}</div>` : ''}
         <div class="pack-meta" style="margin-top:12px;">
           ${p.creator_avatar ? `<img src="${p.creator_avatar}" style="width:24px;height:24px;border-radius:50%;" alt="">` : ''}
           <span>${t('packBy')} ${p.creator_name || 'Anonymous'}</span>
@@ -2253,36 +2587,36 @@ applyLang();
 (async function() {
   const style = document.createElement('style');
   style.textContent = `
-    .fb-bubble { position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; background:#40c040; border:none; cursor:pointer; font-size:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,0,0,.3); z-index:1000; transition:transform .2s; }
+    .fb-bubble { position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; background:var(--arctic-accent); border:none; cursor:pointer; font-size:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(56,189,248,.3); z-index:1000; transition:transform .2s; }
     .fb-bubble:hover { transform:scale(1.1); }
-    .fb-bubble .fb-dot { position:absolute; top:2px; right:2px; width:12px; height:12px; background:#f44; border-radius:50%; display:none; border:2px solid #0f0f0f; }
-    body.light .fb-bubble .fb-dot { border-color:#f5f5f5; }
-    .fb-panel { position:fixed; bottom:90px; right:24px; width:320px; height:400px; background:#1a1a1a; border:1px solid #333; border-radius:12px; z-index:1001; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.4); transform:translateY(20px); opacity:0; pointer-events:none; transition:transform .25s ease, opacity .25s ease; }
+    .fb-bubble .fb-dot { position:absolute; top:2px; right:2px; width:12px; height:12px; background:var(--arctic-aurora-red); border-radius:50%; display:none; border:2px solid var(--arctic-bg); }
+    body.light .fb-bubble .fb-dot { border-color:var(--arctic-bg); }
+    .fb-panel { position:fixed; bottom:90px; right:24px; width:320px; height:400px; background:var(--arctic-bg-elevated); border:1px solid var(--arctic-border); border-radius:12px; z-index:1001; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.4); transform:translateY(20px); opacity:0; pointer-events:none; transition:transform .25s ease, opacity .25s ease; }
     .fb-panel.open { transform:translateY(0); opacity:1; pointer-events:auto; }
-    body.light .fb-panel { background:#fff; border-color:#ddd; box-shadow:0 8px 32px rgba(0,0,0,.1); }
-    .fb-header { padding:12px 16px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:600; }
-    body.light .fb-header { border-color:#ddd; color:#333; }
-    .fb-close { background:none; border:none; color:#888; cursor:pointer; font-size:18px; padding:0 4px; }
+    body.light .fb-panel { background:var(--arctic-bg-elevated); border-color:var(--arctic-border); }
+    .fb-header { padding:12px 16px; border-bottom:1px solid var(--arctic-border); display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:600; }
+    body.light .fb-header { border-color:var(--arctic-border); color:var(--arctic-text); }
+    .fb-close { background:none; border:none; color:var(--arctic-text-muted); cursor:pointer; font-size:18px; padding:0 4px; }
     .fb-close:hover { color:#fff; }
     body.light .fb-close:hover { color:#333; }
     .fb-messages { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; }
     .fb-msg { max-width:85%; padding:8px 12px; border-radius:12px; font-size:13px; line-height:1.5; word-break:break-word; }
-    .fb-msg.user { align-self:flex-end; background:#2d5a2d; color:#e0e0e0; border-bottom-right-radius:4px; }
-    .fb-msg.reply { align-self:flex-start; background:#2a2a2a; color:#ccc; border-bottom-left-radius:4px; }
-    body.light .fb-msg.user { background:#d4edda; color:#333; }
-    body.light .fb-msg.reply { background:#e8e8e8; color:#333; }
-    .fb-msg .fb-time { font-size:10px; color:#666; margin-top:4px; }
-    .fb-empty { flex:1; display:flex; align-items:center; justify-content:center; padding:20px; text-align:center; color:#666; font-size:13px; line-height:1.6; }
-    .fb-input { padding:10px 12px; border-top:1px solid #333; display:flex; flex-direction:column; gap:6px; }
-    body.light .fb-input { border-color:#ddd; }
-    .fb-input textarea { width:100%; resize:none; background:#0f0f0f; border:1px solid #333; border-radius:8px; color:#e0e0e0; padding:8px 10px; font-size:13px; font-family:inherit; height:60px; }
-    body.light .fb-input textarea { background:#f5f5f5; border-color:#ccc; color:#333; }
-    .fb-input textarea:focus { outline:none; border-color:#40c040; }
-    .fb-input input { width:100%; background:#0f0f0f; border:1px solid #333; border-radius:6px; color:#e0e0e0; padding:6px 10px; font-size:12px; font-family:inherit; }
-    body.light .fb-input input { background:#f5f5f5; border-color:#ccc; color:#333; }
-    .fb-input input:focus { outline:none; border-color:#40c040; }
-    .fb-send { padding:6px 16px; background:#40c040; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500; align-self:flex-end; transition:background .2s; }
-    .fb-send:hover { background:#35a535; }
+    .fb-msg.user { align-self:flex-end; background:var(--arctic-accent-dim); color:var(--arctic-text); border:1px solid rgba(56,189,248,0.12); border-bottom-right-radius:4px; }
+    .fb-msg.reply { align-self:flex-start; background:var(--arctic-surface); color:var(--arctic-text-secondary); border:1px solid var(--arctic-border); border-bottom-left-radius:4px; }
+    body.light .fb-msg.user { background:var(--arctic-accent-dim); color:var(--arctic-text); }
+    body.light .fb-msg.reply { background:var(--arctic-surface); color:var(--arctic-text); }
+    .fb-msg .fb-time { font-size:10px; color:var(--arctic-text-muted); margin-top:4px; }
+    .fb-empty { flex:1; display:flex; align-items:center; justify-content:center; padding:20px; text-align:center; color:var(--arctic-text-muted); font-size:13px; line-height:1.6; }
+    .fb-input { padding:10px 12px; border-top:1px solid var(--arctic-border); display:flex; flex-direction:column; gap:6px; }
+    body.light .fb-input { border-color:var(--arctic-border); }
+    .fb-input textarea { width:100%; resize:none; background:var(--arctic-input-bg); border:1px solid var(--arctic-border); border-radius:8px; color:var(--arctic-text); padding:8px 10px; font-size:13px; font-family:inherit; height:60px; }
+    body.light .fb-input textarea { background:var(--arctic-input-bg); border-color:var(--arctic-border); color:var(--arctic-text); }
+    .fb-input textarea:focus { outline:none; border-color:var(--arctic-accent); box-shadow:0 0 0 2px rgba(56,189,248,0.1); }
+    .fb-input input { width:100%; background:var(--arctic-input-bg); border:1px solid var(--arctic-border); border-radius:6px; color:var(--arctic-text); padding:6px 10px; font-size:12px; font-family:inherit; }
+    body.light .fb-input input { background:var(--arctic-input-bg); border-color:var(--arctic-border); color:var(--arctic-text); }
+    .fb-input input:focus { outline:none; border-color:var(--arctic-accent); }
+    .fb-send { padding:6px 16px; background:var(--arctic-accent); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500; align-self:flex-end; transition:all .2s; }
+    .fb-send:hover { background:#0ea5e9; box-shadow:0 0 12px rgba(56,189,248,0.3); }
     .fb-send:disabled { opacity:.5; cursor:default; }
     @media (max-width:480px) { .fb-panel { left:12px; right:12px; width:auto; bottom:84px; height:60vh; } .fb-bubble { bottom:16px; right:16px; } }
   `;

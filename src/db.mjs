@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -149,6 +149,21 @@ export function getDb(dbPath) {
   } catch (e) {
     if (!e.message.includes('already exists')) console.error('Migration 013:', e.message);
   }
+
+  // Migration 014: digest_prompts table + prompt_id on source_groups
+  try {
+    const sql14 = readFileSync(join(ROOT, 'migrations', '014_prompts.sql'), 'utf8');
+    for (const stmt of sql14.split(';').filter(s => s.trim())) {
+      try { _db.exec(stmt + ';'); } catch (e) {
+        if (!e.message.includes('already exists') && !e.message.includes('duplicate column')) throw e;
+      }
+    }
+  } catch (e) {
+    if (!e.message.includes('already exists') && !e.message.includes('duplicate column')) console.error('Migration 014:', e.message);
+  }
+
+  // Seed prompts from template files on first run
+  _seedPromptsFromFiles(_db);
 
   // Backfill slugs for existing users
   _backfillSlugs(_db);
@@ -557,15 +572,15 @@ export function getSourceGroup(db, id) {
   return db.prepare('SELECT * FROM source_groups WHERE id = ?').get(id);
 }
 
-export function createSourceGroup(db, { name, description = '', digestTypes = '[]', timezone = 'UTC', schedule = '{}', telegram_thread_id = null, telegram_chat_id = null }) {
+export function createSourceGroup(db, { name, description = '', digestTypes = '[]', timezone = 'UTC', schedule = '{}', telegram_thread_id = null, telegram_chat_id = null, prompt_id = null }) {
   const result = db.prepare(
-    'INSERT INTO source_groups (name, description, digest_types, timezone, schedule, telegram_thread_id, telegram_chat_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).run(name, description, digestTypes, timezone, schedule, telegram_thread_id, telegram_chat_id);
+    'INSERT INTO source_groups (name, description, digest_types, timezone, schedule, telegram_thread_id, telegram_chat_id, prompt_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(name, description, digestTypes, timezone, schedule, telegram_thread_id, telegram_chat_id, prompt_id);
   return { id: result.lastInsertRowid };
 }
 
 export function updateSourceGroup(db, id, patch) {
-  const allowed = ['name', 'description', 'digest_types', 'timezone', 'schedule', 'is_active', 'telegram_thread_id', 'telegram_chat_id'];
+  const allowed = ['name', 'description', 'digest_types', 'timezone', 'schedule', 'is_active', 'telegram_thread_id', 'telegram_chat_id', 'prompt_id'];
   const sets = [];
   const params = [];
   for (const [k, v] of Object.entries(patch)) {
@@ -589,6 +604,102 @@ export function deleteSourceGroup(db, id) {
 
 export function getSourceGroupByName(db, name) {
   return db.prepare('SELECT * FROM source_groups WHERE name = ?').get(name);
+}
+
+// ── Digest Prompts ──
+
+function _seedPromptsFromFiles(db) {
+  const count = db.prepare('SELECT COUNT(*) as c FROM digest_prompts').get();
+  if (count.c > 0) return; // Already seeded
+  const promptsDir = join(ROOT, 'templates', 'prompts');
+  const defaultTemplate = join(ROOT, 'templates', 'digest-prompt.md');
+  // Seed the default prompt
+  if (existsSync(defaultTemplate)) {
+    const content = readFileSync(defaultTemplate, 'utf8');
+    db.prepare('INSERT INTO digest_prompts (name, content, is_default) VALUES (?, ?, 1)').run('Default', content);
+  } else {
+    db.prepare('INSERT INTO digest_prompts (name, content, is_default) VALUES (?, ?, 1)').run('Default',
+      '# Default Digest Prompt\n\nYou are a tech news curator. Create a structured daily digest from the provided sources.\nFocus on AI research, prompt engineering, LLM management, hardware (ESP32), and modern dev stacks.\n\n{{recent_context}}\n\nFORMAT:\n☀️ ClawFeed | {{date}} {{timezone}}\n\n🔥 Important (2-3 truly significant items)\n• **[Headline]** — [2-3 sentence summary]\n\n📰 Feed Highlights ({{highlights_count}} items, diversified across sources)\n• **[Source Name]**: [Detailed summary]'
+    );
+  }
+  // Seed group-specific prompts from files
+  if (existsSync(promptsDir)) {
+    try {
+      const files = readdirSync(promptsDir);
+      for (const file of files) {
+        if (!file.endsWith('.md')) continue;
+        const name = file.replace('.md', '').split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const content = readFileSync(join(promptsDir, file), 'utf8');
+        try {
+          db.prepare('INSERT INTO digest_prompts (name, content, is_default) VALUES (?, ?, 0)').run(name, content);
+        } catch (e) { /* Ignore duplicates */ }
+      }
+    } catch (e) {
+      console.error('Seed prompts:', e.message);
+    }
+  }
+  // Auto-assign prompts to groups by name matching
+  _autoAssignPrompts(db);
+}
+
+function _autoAssignPrompts(db) {
+  const prompts = db.prepare('SELECT id, name FROM digest_prompts WHERE is_default = 0').all();
+  const groups = db.prepare('SELECT id, name FROM source_groups WHERE prompt_id IS NULL').all();
+  for (const group of groups) {
+    const normalized = group.name.replace(/[^\w\s]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+    for (const prompt of prompts) {
+      const promptNorm = prompt.name.toLowerCase().replace(/-/g, ' ');
+      if (normalized === promptNorm || normalized.includes(promptNorm) || promptNorm.includes(normalized)) {
+        db.prepare('UPDATE source_groups SET prompt_id = ? WHERE id = ?').run(prompt.id, group.id);
+        break;
+      }
+    }
+  }
+}
+
+export function listPrompts(db) {
+  return db.prepare('SELECT * FROM digest_prompts ORDER BY is_default DESC, name ASC').all();
+}
+
+export function getPrompt(db, id) {
+  return db.prepare('SELECT * FROM digest_prompts WHERE id = ?').get(id);
+}
+
+export function createPrompt(db, { name, content, is_default = 0 }) {
+  const result = db.prepare(
+    'INSERT INTO digest_prompts (name, content, is_default) VALUES (?, ?, ?)'
+  ).run(name, content, is_default);
+  return { id: result.lastInsertRowid };
+}
+
+export function updatePrompt(db, id, { name, content }) {
+  const sets = [];
+  const params = [];
+  if (name !== undefined) { sets.push('name = ?'); params.push(name); }
+  if (content !== undefined) { sets.push('content = ?'); params.push(content); }
+  if (!sets.length) return { changes: 0 };
+  sets.push("updated_at = datetime('now')");
+  params.push(id);
+  return db.prepare(`UPDATE digest_prompts SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+}
+
+export function deletePrompt(db, id) {
+  // Guard: cannot delete default prompt
+  const prompt = db.prepare('SELECT is_default FROM digest_prompts WHERE id = ?').get(id);
+  if (!prompt) return { error: 'not found' };
+  if (prompt.is_default) return { error: 'cannot delete default prompt' };
+  // Unassign groups using this prompt
+  db.prepare('UPDATE source_groups SET prompt_id = NULL WHERE prompt_id = ?').run(id);
+  return db.prepare('DELETE FROM digest_prompts WHERE id = ?').run(id);
+}
+
+export function getPromptForGroup(db, groupId) {
+  const row = db.prepare(
+    'SELECT dp.* FROM digest_prompts dp JOIN source_groups sg ON sg.prompt_id = dp.id WHERE sg.id = ?'
+  ).get(groupId);
+  if (row) return row;
+  // Fall back to default prompt
+  return db.prepare('SELECT * FROM digest_prompts WHERE is_default = 1').get();
 }
 
 // ── Settings ──

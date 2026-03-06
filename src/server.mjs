@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import { randomBytes, createHmac, timingSafeEqual } from 'crypto';
 import { lookup } from 'dns/promises';
 import { isIP } from 'net';
-import { getDb, listDigests, getDigest, createDigest, listMarks, createMark, deleteMark, getConfig, setConfig, upsertUser, createSession, getSession, deleteSession, listSources, getSource, createSource, updateSource, deleteSource, getSourceByTypeConfig, getUserBySlug, listDigestsByUser, countDigestsByUser, createPack, getPack, getPackBySlug, listPacks, incrementPackInstall, deletePack, listSubscriptions, listUserSelections, subscribe, unsubscribe, bulkSubscribe, isSubscribed, createFeedback, getUserFeedback, getAllFeedback, replyToFeedback, updateFeedbackStatus, markFeedbackRead, getUnreadFeedbackCount, listSourceGroups, getSourceGroup, createSourceGroup, updateSourceGroup, deleteSourceGroup, getSourceGroupByName, getSetting, setSetting, getAllSettings } from './db.mjs';
+import { getDb, listDigests, getDigest, createDigest, listMarks, createMark, deleteMark, getConfig, setConfig, upsertUser, createSession, getSession, deleteSession, listSources, getSource, createSource, updateSource, deleteSource, getSourceByTypeConfig, getUserBySlug, listDigestsByUser, countDigestsByUser, createPack, getPack, getPackBySlug, listPacks, incrementPackInstall, deletePack, listSubscriptions, listUserSelections, subscribe, unsubscribe, bulkSubscribe, isSubscribed, createFeedback, getUserFeedback, getAllFeedback, replyToFeedback, updateFeedbackStatus, markFeedbackRead, getUnreadFeedbackCount, listSourceGroups, getSourceGroup, createSourceGroup, updateSourceGroup, deleteSourceGroup, getSourceGroupByName, getSetting, setSetting, getAllSettings, listPrompts, getPrompt, createPrompt, updatePrompt, deletePrompt } from './db.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -945,10 +945,14 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && path === '/api/groups') {
       const activeOnly = params.get('active') === 'true';
       const groups = listSourceGroups(db, { activeOnly });
+      // Build prompt_id → name lookup
+      const prompts = listPrompts(db);
+      const promptMap = Object.fromEntries(prompts.map(p => [p.id, p.name]));
       return json(res, groups.map(g => ({
         ...g,
         digest_types: JSON.parse(g.digest_types || '[]'),
-        schedule: JSON.parse(g.schedule || '{}')
+        schedule: JSON.parse(g.schedule || '{}'),
+        prompt_name: g.prompt_id ? (promptMap[g.prompt_id] || null) : null
       })));
     }
 
@@ -956,10 +960,12 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && groupMatch) {
       const g = getSourceGroup(db, parseInt(groupMatch[1]));
       if (!g) return json(res, { error: 'not found' }, 404);
+      const promptRow = g.prompt_id ? getPrompt(db, g.prompt_id) : null;
       return json(res, {
         ...g,
         digest_types: JSON.parse(g.digest_types || '[]'),
-        schedule: JSON.parse(g.schedule || '{}')
+        schedule: JSON.parse(g.schedule || '{}'),
+        prompt_name: promptRow?.name || null
       });
     }
 
@@ -975,7 +981,8 @@ const server = createServer(async (req, res) => {
         timezone: body.timezone || 'UTC',
         schedule,
         telegram_thread_id: body.telegram_thread_id ?? null,
-        telegram_chat_id: body.telegram_chat_id ?? null
+        telegram_chat_id: body.telegram_chat_id ?? null,
+        prompt_id: body.prompt_id ?? null
       });
       return json(res, result, 201);
     }
@@ -998,6 +1005,52 @@ const server = createServer(async (req, res) => {
     if (req.method === 'DELETE' && groupMatch) {
       if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
       deleteSourceGroup(db, parseInt(groupMatch[1]));
+      return json(res, { ok: true });
+    }
+
+    // ── Prompt endpoints ──
+
+    if (req.method === 'GET' && path === '/api/prompts') {
+      const prompts = listPrompts(db);
+      // Include which groups are assigned to each prompt
+      const groups = listSourceGroups(db, {});
+      return json(res, prompts.map(p => ({
+        ...p,
+        assigned_groups: groups.filter(g => g.prompt_id === p.id).map(g => ({ id: g.id, name: g.name }))
+      })));
+    }
+
+    const promptMatch = path.match(/^\/api\/prompts\/(\d+)$/);
+    if (req.method === 'GET' && promptMatch) {
+      const p = getPrompt(db, parseInt(promptMatch[1]));
+      if (!p) return json(res, { error: 'not found' }, 404);
+      return json(res, p);
+    }
+
+    if (req.method === 'POST' && path === '/api/prompts') {
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
+      const body = await parseBody(req);
+      if (!body.name || !body.content) return json(res, { error: 'name and content required' }, 400);
+      try {
+        const result = createPrompt(db, { name: body.name, content: body.content });
+        return json(res, result, 201);
+      } catch (e) {
+        if (e.message.includes('UNIQUE')) return json(res, { error: 'prompt name already exists' }, 409);
+        throw e;
+      }
+    }
+
+    if (req.method === 'PUT' && promptMatch) {
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
+      const body = await parseBody(req);
+      updatePrompt(db, parseInt(promptMatch[1]), { name: body.name, content: body.content });
+      return json(res, { ok: true });
+    }
+
+    if (req.method === 'DELETE' && promptMatch) {
+      if (!req.user && AUTH_ENABLED) return json(res, { error: 'login required' }, 401);
+      const result = deletePrompt(db, parseInt(promptMatch[1]));
+      if (result.error) return json(res, result, 400);
       return json(res, { ok: true });
     }
 
