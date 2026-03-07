@@ -16,6 +16,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 import re
+from concurrent.futures import ThreadPoolExecutor
 from html import unescape
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -44,7 +45,7 @@ TEMPLATES_DIR = ROOT / "templates"
 load_env_file(ROOT / ".env")
 
 # Config
-API_KEY = os.environ.get("API_KEY", "0221f247a74a6ae5776b87e4a224d326cd22430be3a9c9087fe9d08f06771143")
+API_KEY = os.environ.get("API_KEY", "")
 API_URL = os.environ.get("API_URL", "http://127.0.0.1:8767/api/digests")
 GEMINI_API_KEY = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY", "")
 DB_PATH = Path(os.environ.get("DIGEST_DB") or os.environ.get("AI_DIGEST_DB") or (ROOT / "data" / "digest.db"))
@@ -52,15 +53,12 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = int(os.environ.get("TELEGRAM_CHAT_ID", "0") or "0")
 LAST_GEMINI_ERROR = ""
 
-ALLOWED_DIGEST_TYPES = {"4h", "4h-tech", "4h-status", "4h-pt", "daily", "weekly", "monthly"}
-
-
 def normalize_digest_types(raw):
     if isinstance(raw, str):
         raw = [raw]
     if not isinstance(raw, list):
         return ["daily"]
-    cleaned = [str(x).strip() for x in raw if str(x).strip() in ALLOWED_DIGEST_TYPES]
+    cleaned = [str(x).strip() for x in raw if str(x).strip()]
     return cleaned or ["daily"]
 
 
@@ -274,15 +272,6 @@ def load_groups_from_db():
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     try:
-        # Ensure telegram columns exist (migration 012 may not have run via Node yet)
-        for col, typedef in [('telegram_thread_id', 'INTEGER DEFAULT NULL'),
-                              ('telegram_chat_id', 'TEXT DEFAULT NULL')]:
-            try:
-                conn.execute(f'ALTER TABLE source_groups ADD COLUMN {col} {typedef}')
-                conn.commit()
-            except Exception:
-                pass  # column already exists
-
         rows = conn.execute(
             """
             SELECT id, name, description, digest_types, timezone, is_active,
@@ -501,8 +490,7 @@ def fetch_hackernews(limit=15):
         with urllib.request.urlopen(req, timeout=10) as resp:
             ids = json.loads(resp.read())[:limit]
         
-        stories = []
-        for story_id in ids:
+        def _fetch_story(story_id):
             try:
                 req = urllib.request.Request(
                     f'https://hacker-news.firebaseio.com/v0/item/{story_id}.json',
@@ -512,9 +500,14 @@ def fetch_hackernews(limit=15):
                     story = json.loads(resp.read())
                     if story and 'title' in story:
                         url = story.get('url', f"https://news.ycombinator.com/item?id={story_id}")
-                        stories.append(f"• HN: {story['title']} ({url})")
-            except Exception as e:
-                continue
+                        return f"• HN: {story['title']} ({url})"
+            except Exception:
+                pass
+            return None
+
+        with ThreadPoolExecutor(max_workers=10) as pool:
+            results = list(pool.map(_fetch_story, ids))
+        stories = [r for r in results if r is not None]
         return stories
     except Exception as e:
         return [f"• Error fetching HN: {str(e)}"]
@@ -884,7 +877,7 @@ Note: Gemini summarization unavailable — showing aggregated feeds with basic f
 
     if digest_id:
         print(f"✅ Digest created! ID: {digest_id}")
-        print(f"📖 View: http://127.0.0.1:8767/#digest-{digest_id}")
+        print(f"📖 View: http://vmi2916953.tail652dda.ts.net:8767/#digest-{digest_id}")
         save_digest_items(digest_id, group_id, all_content)
         if POST_TELEGRAM:
             post_group_digest_to_telegram(digest_id, group_info)
@@ -978,7 +971,7 @@ def _tg_post_digest(digest, topic_name, thread_id, bot_token, chat_id):
             return False
         if i < len(chunks):
             time.sleep(1)
-    footer = f"\n🔗 <a href='http://127.0.0.1:8767/#digest-{digest_id}'>View on ClawFeed</a>"
+    footer = f"\n🔗 <a href='http://vmi2916953.tail652dda.ts.net:8767/#digest-{digest_id}'>View on ClawFeed</a>"
     _tg_send_message(footer, thread_id, bot_token, chat_id)
     return True
 
@@ -1031,8 +1024,8 @@ def main():
             args.append(arg)
 
     digest_type = args[0] if args else 'daily'
-    if digest_type not in ALLOWED_DIGEST_TYPES:
-        print(f"❌ Invalid digest type '{digest_type}'. Allowed: {', '.join(sorted(ALLOWED_DIGEST_TYPES))}")
+    if not digest_type.strip():
+        print("❌ Empty digest type provided.")
         sys.exit(1)
 
     if GROUP_ID_FILTER is not None:
@@ -1156,7 +1149,7 @@ def main():
     for r in results:
         status = "✅" if r['success'] else "❌"
         if r['digest_id']:
-            print(f"{status} {r['group']}: http://127.0.0.1:8767/#digest-{r['digest_id']}")
+            print(f"{status} {r['group']}: http://vmi2916953.tail652dda.ts.net:8767/#digest-{r['digest_id']}")
         else:
             print(f"{status} {r['group']}: Failed to create")
 

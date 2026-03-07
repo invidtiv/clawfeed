@@ -2,23 +2,24 @@ import Database from 'better-sqlite3';
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import env from './env.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 
-// Load .env
-const envPath = join(ROOT, '.env');
-const env = {};
-if (existsSync(envPath)) {
-  for (const line of readFileSync(envPath, 'utf8').split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq > 0) env[trimmed.slice(0, eq)] = trimmed.slice(eq + 1);
+let _db;
+
+function _runSqlIdempotent(db, sql) {
+  for (const stmt of sql.split(';').map(s => s.trim()).filter(Boolean)) {
+    try {
+      db.exec(stmt + ';');
+    } catch (e) {
+      if (!e.message.includes('duplicate column') && !e.message.includes('already exists') && !e.message.includes('no such table')) {
+        throw e;
+      }
+    }
   }
 }
-
-let _db;
 
 export function getDb(dbPath) {
   if (_db) return _db;
@@ -26,140 +27,20 @@ export function getDb(dbPath) {
   _db = new Database(p);
   _db.pragma('journal_mode = WAL');
   _db.pragma('foreign_keys = ON');
-  // Run migrations
-  const sql = readFileSync(join(ROOT, 'migrations', '001_init.sql'), 'utf8');
-  _db.exec(sql);
-  // Run auth migration (idempotent)
-  try {
-    const sql2 = readFileSync(join(ROOT, 'migrations', '002_auth.sql'), 'utf8');
-    // Execute each statement separately since ALTER TABLE may fail if column exists
-    for (const stmt of sql2.split(';').map(s => s.trim()).filter(Boolean)) {
-      try { _db.exec(stmt + ';'); } catch (e) {
-        if (!e.message.includes('duplicate column')) throw e;
+  // Run migrations from all .sql files in sorted order
+  const migrationsDir = join(ROOT, 'migrations');
+  const migrationFiles = readdirSync(migrationsDir)
+    .filter(f => f.endsWith('.sql'))
+    .sort();
+  for (const file of migrationFiles) {
+    try {
+      const sql = readFileSync(join(migrationsDir, file), 'utf8');
+      _runSqlIdempotent(_db, sql);
+    } catch (e) {
+      if (!e.message.includes('duplicate column') && !e.message.includes('already exists') && !e.message.includes('no such table')) {
+        console.error(`Migration ${file}:`, e.message);
       }
     }
-  } catch (e) {
-    if (!e.message.includes('duplicate column')) console.error('Migration 002:', e.message);
-  }
-  // Run sources migration (idempotent)
-  try {
-    const sql3 = readFileSync(join(ROOT, 'migrations', '003_sources.sql'), 'utf8');
-    _db.exec(sql3);
-  } catch (e) {
-    if (!e.message.includes('already exists')) console.error('Migration 003:', e.message);
-  }
-  // Run feed migration (idempotent)
-  try {
-    const sql4 = readFileSync(join(ROOT, 'migrations', '004_feed.sql'), 'utf8');
-    for (const stmt of sql4.split(';').map(s => s.trim()).filter(Boolean)) {
-      try { _db.exec(stmt + ';'); } catch (e) {
-        if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) throw e;
-      }
-    }
-  } catch (e) {
-    if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) console.error('Migration 004:', e.message);
-  }
-  // Run source packs migration (idempotent)
-  try {
-    const sql5 = readFileSync(join(ROOT, 'migrations', '005_source_packs.sql'), 'utf8');
-    _db.exec(sql5);
-  } catch (e) {
-    if (!e.message.includes('already exists')) console.error('Migration 005:', e.message);
-  }
-  // Run subscriptions migration (idempotent)
-  try {
-    const sql6 = readFileSync(join(ROOT, 'migrations', '006_subscriptions.sql'), 'utf8');
-    _db.exec(sql6);
-  } catch (e) {
-    if (!e.message.includes('already exists')) console.error('Migration 006:', e.message);
-  }
-  // Run soft delete migration (idempotent)
-  try {
-    const sql7 = readFileSync(join(ROOT, 'migrations', '007_soft_delete.sql'), 'utf8');
-    for (const stmt of sql7.split(';').map(s => s.trim()).filter(Boolean)) {
-      try { _db.exec(stmt + ';'); } catch (e) {
-        if (!e.message.includes('duplicate column')) throw e;
-      }
-    }
-  } catch (e) {
-    if (!e.message.includes('duplicate column')) console.error('Migration 007:', e.message);
-  }
-  // Run feedback migration (idempotent)
-  try {
-    const sql8 = readFileSync(join(ROOT, 'migrations', '008_feedback.sql'), 'utf8');
-    _db.exec(sql8);
-  } catch (e) {
-    if (!e.message.includes('already exists')) console.error('Migration 008:', e.message);
-  }
-  // Migration 009: feedback v2 (category + read_at)
-  try {
-    const sql9 = readFileSync(join(ROOT, 'migrations', '009_feedback_v2.sql'), 'utf8');
-    for (const stmt of sql9.split(';').filter(s => s.trim())) {
-      try { _db.exec(stmt + ';'); } catch (e) {
-        if (!e.message.includes('duplicate column')) throw e;
-      }
-    }
-  } catch (e) {
-    if (!e.message.includes('duplicate column')) console.error('Migration 009:', e.message);
-  }
-  // Migration 010: source groups and settings
-  try {
-    const sql10 = readFileSync(join(ROOT, 'migrations', '010_source_groups.sql'), 'utf8');
-    for (const stmt of sql10.split(';').filter(s => s.trim())) {
-      try { _db.exec(stmt + ';'); } catch (e) {
-        if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) throw e;
-      }
-    }
-  } catch (e) {
-    if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) console.error('Migration 010:', e.message);
-  }
-
-  // Migration 011: remove digest type constraint to allow custom types
-  try {
-    const sql11 = readFileSync(join(ROOT, 'migrations', '011_remove_digest_type_constraint.sql'), 'utf8');
-    for (const stmt of sql11.split(';').filter(s => s.trim())) {
-      try { _db.exec(stmt + ';'); } catch (e) {
-        if (!e.message.includes('already exists') && !e.message.includes('no such table')) throw e;
-      }
-    }
-  } catch (e) {
-    if (!e.message.includes('already exists') && !e.message.includes('no such table')) console.error('Migration 011:', e.message);
-  }
-
-  // Migration 012: Telegram configuration per source group
-  try {
-    const sql12 = readFileSync(join(ROOT, 'migrations', '012_telegram_config.sql'), 'utf8');
-    for (const stmt of sql12.split(';').filter(s => s.trim())) {
-      try { _db.exec(stmt + ';'); } catch (e) {
-        if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) throw e;
-      }
-    }
-  } catch (e) {
-    if (!e.message.includes('duplicate column') && !e.message.includes('already exists')) console.error('Migration 012:', e.message);
-  }
-
-  // Migration 013: digest_items table for deduplication
-  try {
-    const sql13 = readFileSync(join(ROOT, 'migrations', '013_digest_items.sql'), 'utf8');
-    for (const stmt of sql13.split(';').filter(s => s.trim())) {
-      try { _db.exec(stmt + ';'); } catch (e) {
-        if (!e.message.includes('already exists')) throw e;
-      }
-    }
-  } catch (e) {
-    if (!e.message.includes('already exists')) console.error('Migration 013:', e.message);
-  }
-
-  // Migration 014: digest_prompts table + prompt_id on source_groups
-  try {
-    const sql14 = readFileSync(join(ROOT, 'migrations', '014_prompts.sql'), 'utf8');
-    for (const stmt of sql14.split(';').filter(s => s.trim())) {
-      try { _db.exec(stmt + ';'); } catch (e) {
-        if (!e.message.includes('already exists') && !e.message.includes('duplicate column')) throw e;
-      }
-    }
-  } catch (e) {
-    if (!e.message.includes('already exists') && !e.message.includes('duplicate column')) console.error('Migration 014:', e.message);
   }
 
   // Seed prompts from template files on first run
@@ -216,21 +97,12 @@ export function getDigest(db, id) {
 }
 
 export function createDigest(db, { type, content, metadata = '{}', created_at, group_id }) {
-  let sql, params;
-  if (created_at && group_id !== undefined) {
-    sql = 'INSERT INTO digests (type, content, metadata, created_at, group_id) VALUES (?, ?, ?, ?, ?)';
-    params = [type, content, metadata, created_at, group_id];
-  } else if (created_at) {
-    sql = 'INSERT INTO digests (type, content, metadata, created_at) VALUES (?, ?, ?, ?)';
-    params = [type, content, metadata, created_at];
-  } else if (group_id !== undefined) {
-    sql = 'INSERT INTO digests (type, content, metadata, group_id) VALUES (?, ?, ?, ?)';
-    params = [type, content, metadata, group_id];
-  } else {
-    sql = 'INSERT INTO digests (type, content, metadata) VALUES (?, ?, ?)';
-    params = [type, content, metadata];
-  }
-  const result = db.prepare(sql).run(...params);
+  const cols = ['type', 'content', 'metadata'];
+  const params = [type, content, metadata];
+  if (created_at !== undefined) { cols.push('created_at'); params.push(created_at); }
+  if (group_id !== undefined) { cols.push('group_id'); params.push(group_id); }
+  const placeholders = cols.map(() => '?').join(', ');
+  const result = db.prepare(`INSERT INTO digests (${cols.join(', ')}) VALUES (${placeholders})`).run(...params);
   return { id: result.lastInsertRowid };
 }
 

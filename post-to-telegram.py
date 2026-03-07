@@ -4,15 +4,16 @@ Post ClawFeed digests to Telegram group with topics.
 Sends full content split into multiple messages.
 Usage: python3 post-to-telegram.py <digest_type>
 """
+import os
 import sys
 import json
 import urllib.request
 import time
 from pathlib import Path
 
-API_URL = "http://127.0.0.1:8767/api/digests"
-TELEGRAM_GROUP = -1003772707064
-BOT_TOKEN = "8350586494:AAFBUr3GdWs_kwgr71vZslCpkYFzc7sd-54"
+API_URL = os.environ.get("API_URL", "http://127.0.0.1:8767/api/digests")
+TELEGRAM_GROUP = int(os.environ.get("TELEGRAM_CHAT_ID", "0") or "0")
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 # Group mappings (group_id -> (topic_name, thread_id))
 GROUPS = {
@@ -146,12 +147,13 @@ def post_digest_to_topic(digest, topic_name, thread_id):
             time.sleep(1)
     
     # Send footer with link
-    footer = f"\n🔗 <a href='http://127.0.0.1:8767/#digest-{digest_id}'>View on ClawFeed</a>"
+    footer = f"\n🔗 <a href='http://vmi2916953.tail652dda.ts.net:8767/#digest-{digest_id}'>View on ClawFeed</a>"
     send_message(footer, thread_id)
     
     return True
 
 def main():
+    print("WARNING: DEPRECATED: This script is superseded by the Telegram posting in generate-digest.py. Consider removing it.")
     digest_type = sys.argv[1] if len(sys.argv) > 1 else 'daily'
     
     print(f"🚀 Posting {digest_type} digests to Telegram...")

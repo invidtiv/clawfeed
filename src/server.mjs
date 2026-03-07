@@ -1,4 +1,3 @@
-import { createServer } from 'http';
 import http from 'http';
 import https from 'https';
 import { readFileSync, existsSync, mkdirSync } from 'fs';
@@ -9,21 +8,10 @@ import { randomBytes, createHmac, timingSafeEqual } from 'crypto';
 import { lookup } from 'dns/promises';
 import { isIP } from 'net';
 import { getDb, listDigests, getDigest, createDigest, listMarks, createMark, deleteMark, getConfig, setConfig, upsertUser, createSession, getSession, deleteSession, listSources, getSource, createSource, updateSource, deleteSource, getSourceByTypeConfig, getUserBySlug, listDigestsByUser, countDigestsByUser, createPack, getPack, getPackBySlug, listPacks, incrementPackInstall, deletePack, listSubscriptions, listUserSelections, subscribe, unsubscribe, bulkSubscribe, isSubscribed, createFeedback, getUserFeedback, getAllFeedback, replyToFeedback, updateFeedbackStatus, markFeedbackRead, getUnreadFeedbackCount, listSourceGroups, getSourceGroup, createSourceGroup, updateSourceGroup, deleteSourceGroup, getSourceGroupByName, getSetting, setSetting, getAllSettings, listPrompts, getPrompt, createPrompt, updatePrompt, deletePrompt } from './db.mjs';
+import env from './env.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-
-// ── Load .env ──
-const envPath = join(ROOT, '.env');
-const env = {};
-if (existsSync(envPath)) {
-  for (const line of readFileSync(envPath, 'utf8').split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq > 0) env[trimmed.slice(0, eq)] = trimmed.slice(eq + 1);
-  }
-}
 
 const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
@@ -155,10 +143,21 @@ function isAllowedOrigin(origin) {
   const normalized = normalizeOrigin(origin);
   if (!normalized) return false;
   if (!ALLOWED_ORIGINS.length) return false;
+  let hostname;
+  try { hostname = new URL(normalized).hostname; } catch { return false; }
   return ALLOWED_ORIGINS.some((allowed) => {
     if (allowed.includes('://')) return normalizeOrigin(allowed) === normalized;
-    try { return new URL(normalized).hostname === allowed; } catch { return false; }
+    if (allowed.startsWith('*.')) return hostname.endsWith(allowed.slice(1)) || hostname === allowed.slice(2);
+    return hostname === allowed;
   });
+}
+
+function isValidApiKey(provided) {
+  if (!API_KEY || !provided) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(API_KEY);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 function signOAuthState(payload) {
@@ -256,12 +255,13 @@ function attachUser(req) {
   }
 }
 
-function _digestTitle(d, ca) {
+function _digestTitle(d, ca, timezone = 'Asia/Singapore') {
   const dt = new Date(ca.includes('+') ? ca : ca.replace(' ', 'T') + '+08:00');
-  const timeStr = dt.toLocaleString('en-SG', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+  const timeStr = dt.toLocaleString('en-SG', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+  const tzAbbr = timezone === 'Asia/Singapore' ? 'SGT' : timezone;
   const icons = { '4h': '☀️', daily: '📰', weekly: '📅', monthly: '📊' };
   const labels = { '4h': 'AI 简报', daily: 'AI 日报', weekly: 'AI 周报', monthly: 'AI 月报' };
-  return `${icons[d.type] || '📝'} ${labels[d.type] || 'ClawFeed'} | ${timeStr} SGT`;
+  return `${icons[d.type] || '📝'} ${labels[d.type] || 'ClawFeed'} | ${timeStr} ${tzAbbr}`;
 }
 
 // ── Source URL resolver ──
@@ -343,11 +343,13 @@ async function resolveSourceUrl(url) {
   const ct = resp.contentType.toLowerCase();
   const body = resp.body;
 
+  const sanitizeTitle = (raw) => raw.replace(/<[^>]*>/g, '').trim().replace(/\s+/g, ' ').slice(0, 100);
+
   // RSS/Atom
   if (ct.includes('xml') || ct.includes('rss') || ct.includes('atom') || body.trimStart().startsWith('<?xml') || body.includes('<rss') || body.includes('<feed')) {
     if (body.includes('<rss') || body.includes('<feed') || body.includes('<channel')) {
       const titleMatch = body.match(/<title[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
-      const name = titleMatch ? titleMatch[1].trim() : new URL(url).hostname;
+      const name = titleMatch ? sanitizeTitle(titleMatch[1]) : new URL(url).hostname;
       const preview = extractRssPreview(body);
       return { name, type: 'rss', config: { url }, icon: '📡', preview };
     }
@@ -359,7 +361,7 @@ async function resolveSourceUrl(url) {
       const j = JSON.parse(body);
       if (j.version && j.version.includes('jsonfeed')) {
         const preview = (j.items || []).slice(0, 5).map(i => ({ title: i.title || '(untitled)', url: i.url }));
-        return { name: j.title || new URL(url).hostname, type: 'digest_feed', config: { url }, icon: '📰', preview };
+        return { name: sanitizeTitle(j.title || new URL(url).hostname), type: 'digest_feed', config: { url }, icon: '📰', preview };
       }
     } catch {}
   }
@@ -367,15 +369,19 @@ async function resolveSourceUrl(url) {
   // HTML - extract title, treat as website
   if (ct.includes('html') || body.includes('<html') || body.includes('<!DOCTYPE')) {
     const titleMatch = body.match(/<title[^>]*>(.*?)<\/title>/is);
-    const name = titleMatch ? titleMatch[1].trim().replace(/\s+/g, ' ').slice(0, 100) : new URL(url).hostname;
+    const name = titleMatch ? sanitizeTitle(titleMatch[1]) : new URL(url).hostname;
     return { name, type: 'website', config: { url }, icon: '🌐' };
   }
 
   throw new Error('Cannot detect source type');
 }
 
-const server = createServer(async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+const server = http.createServer(async (req, res) => {
+  const reqOrigin = req.headers.origin || '';
+  if (reqOrigin && isAllowedOrigin(reqOrigin)) {
+    res.setHeader('Access-Control-Allow-Origin', reqOrigin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
@@ -587,8 +593,10 @@ const server = createServer(async (req, res) => {
     if (req.method === 'POST' && path === '/api/digests') {
       const authHeader = req.headers.authorization || '';
       const bearerKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-      if (!API_KEY || bearerKey !== API_KEY) return json(res, { error: 'invalid api key' }, 401);
+      if (!isValidApiKey(bearerKey)) return json(res, { error: 'invalid api key' }, 401);
       const body = await parseBody(req);
+      if (!body.type || typeof body.type !== 'string' || !body.type.trim()) return json(res, { error: 'type is required' }, 400);
+      if (!body.content) return json(res, { error: 'content is required' }, 400);
       const result = createDigest(db, body);
       return json(res, result, 201);
     }
@@ -875,7 +883,7 @@ const server = createServer(async (req, res) => {
       const key = params.get('key') || '';
       const authHeader = req.headers.authorization || '';
       const bearerKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-      if (!API_KEY || (key !== API_KEY && bearerKey !== API_KEY)) return json(res, { error: 'invalid api key' }, 401);
+      if (!isValidApiKey(key) && !isValidApiKey(bearerKey)) return json(res, { error: 'invalid api key' }, 401);
       return json(res, getAllFeedback(db));
     }
 
@@ -884,7 +892,7 @@ const server = createServer(async (req, res) => {
       const key = params.get('key') || '';
       const authHeader = req.headers.authorization || '';
       const bearerKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-      if (!API_KEY || (key !== API_KEY && bearerKey !== API_KEY)) return json(res, { error: 'invalid api key' }, 401);
+      if (!isValidApiKey(key) && !isValidApiKey(bearerKey)) return json(res, { error: 'invalid api key' }, 401);
       const body = await parseBody(req);
       if (!body.reply) return json(res, { error: 'reply required' }, 400);
       replyToFeedback(db, parseInt(feedbackReplyMatch[1]), body.reply, body.replied_by || 'agent');
@@ -897,7 +905,7 @@ const server = createServer(async (req, res) => {
       const key = params.get('key') || '';
       const authHeader = req.headers.authorization || '';
       const bearerKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-      if (!API_KEY || (key !== API_KEY && bearerKey !== API_KEY)) return json(res, { error: 'invalid api key' }, 401);
+      if (!isValidApiKey(key) && !isValidApiKey(bearerKey)) return json(res, { error: 'invalid api key' }, 401);
       const body = await parseBody(req);
       const validStatuses = ['open', 'auto_draft', 'needs_human', 'replied', 'closed'];
       if (!validStatuses.includes(body.status)) return json(res, { error: 'invalid status' }, 400);
@@ -934,7 +942,7 @@ const server = createServer(async (req, res) => {
     if (req.method === 'PUT' && path === '/api/config') {
       const authHeader = req.headers.authorization || '';
       const bearerKey = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-      if (!API_KEY || bearerKey !== API_KEY) return json(res, { error: 'invalid api key' }, 401);
+      if (!isValidApiKey(bearerKey)) return json(res, { error: 'invalid api key' }, 401);
       const body = await parseBody(req);
       for (const [k, v] of Object.entries(body)) setConfig(db, k, v);
       return json(res, { ok: true });
